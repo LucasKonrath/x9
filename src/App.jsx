@@ -5,13 +5,14 @@ import { fetchUserEvents } from './services/githubService';
 
 const GITHUB_USERS = [
   'LucasKonrath',
-  'facebook',
-  'google',
-  'microsoft',
-  'netflix',
-  'airbnb',
-  'github',
-  'vercel'
+  'xmacedo',
+  'marcelobnbck',
+  'lee22br',
+  'vitorfurinii',
+  'icarocaetano',
+  'andeerlb',
+  'karane',
+  'joaoguilhermedesa'
 ];
 
 function App() {
