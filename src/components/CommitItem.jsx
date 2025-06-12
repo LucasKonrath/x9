@@ -43,10 +43,10 @@ function CommitItem({ event }) {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-gray-900 font-mono break-all">
                       <a 
-                        href={commit.url.replace('api.github.com/repos', 'github.com')} 
+                        href={commit.url.replace('api.github.com/repos', 'github.com').replace('/commits/', '/commit/')} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-gray-600 hover:text-gray-900"
+                        className="text-gray-600 hover:text-gray-900 hover:underline"
                       >
                         {commit.sha.substring(0, 7)}
                       </a>
