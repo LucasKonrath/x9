@@ -8,7 +8,7 @@ const GITHUB_USERS = [
   'xmacedo',
   'marcelobnbck',
   'lee22br',
-  'vitorfurinii',
+  'vfurinii',
   'icarocaetano',
   'andeerlb',
   'karane',
@@ -41,9 +41,12 @@ function App() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">GitHub Commits Viewer</h1>
-        <p className="text-gray-600">View recent commits from GitHub users</p>
+      <header className="mb-8 flex items-center">
+        <img src="/x9.png" alt="X9 Logo" className="h-16 mr-4" />
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">X9</h1>
+          <p className="text-gray-600">Track GitHub activity of your team</p>
+        </div>
       </header>
 
       <UserSelector 

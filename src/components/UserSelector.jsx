@@ -4,7 +4,7 @@ function UserSelector({ users, selectedUser, onSelectUser }) {
   return (
     <div className="mb-6">
       <label htmlFor="user-select" className="block text-sm font-medium text-gray-700 mb-2">
-        Select GitHub User
+        Select Team Member
       </label>
       <div className="relative">
         <select

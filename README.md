@@ -1,12 +1,13 @@
-# GitHub Commits Viewer
+# X9 - GitHub Activity Tracker
 
-A React application that displays commit data for a preset list of GitHub users.
+A React application that displays GitHub activity for a preset list of team members.
 
 ## Features
 
-- View recent commits from 8 preset GitHub users
+- Track GitHub activity of 8 preset team members
 - Commits are displayed in a timeline format grouped by date
 - Shows commit message, author, repository, and other details
+- Clean, modern UI with the X9 branding
 - Responsive design with Tailwind CSS
 
 ## Tech Stack
