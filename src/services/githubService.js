@@ -14,3 +14,71 @@ export const fetchUserEvents = async (username) => {
     throw new Error(error.response?.data?.message || 'Failed to fetch user events');
   }
 };
+
+import { getKnownFilesForUser, getApiBaseUrl } from '../utils/fileUtils';
+
+/**
+ * Fetches markdown posts for a user from the public folder
+ * @param {string} username - Username
+ * @returns {Promise<Array>} - Array of markdown posts
+ */
+export const fetchMarkdownPosts = async (username) => {
+  try {
+    // Get list of files - try API endpoint first, fall back to hardcoded list
+    let files = [];
+    const apiBaseUrl = getApiBaseUrl();
+  
+    try {
+      // Try to get list from API
+      const indexResponse = await fetch(`${apiBaseUrl}/api/posts/${username}`);
+      if (indexResponse.ok) {
+        files = await indexResponse.json();
+      }
+    } catch (apiError) {
+      console.log('API endpoint not available, using hardcoded file paths');
+    }
+
+    // If no files from API, use hardcoded list (for development)
+    if (files.length === 0) {
+      files = getKnownFilesForUser(username);
+    }
+
+    if (files.length === 0) {
+      console.log(`No files found for user ${username}`);
+      return [];
+    }
+
+    // Fetch each file
+    const posts = await Promise.all(
+      files.map(async (filename) => {
+        try {
+          const response = await fetch(`${apiBaseUrl}/public/${username}/${filename}`);
+          if (!response.ok) {
+            console.error(`Failed to fetch ${filename}: ${response.status}`);
+            return null;
+          }
+
+          const content = await response.text();
+          return {
+            title: filename,
+            content,
+            date: filename.slice(0, 10)
+          };
+        } catch (fileError) {
+          console.error(`Error fetching ${filename}:`, fileError);
+          return null;
+        }
+      })
+    );
+
+    // Filter out nulls and sort by date (newest first)
+    return posts
+      .filter(post => post !== null)
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  } catch (error) {
+    console.error(`Error fetching markdown posts for user ${username}:`, error);
+    // Return empty array instead of throwing to handle case where user has no posts
+    return [];
+  }
+};

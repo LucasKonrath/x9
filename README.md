@@ -25,11 +25,31 @@ A React application that displays GitHub activity for a preset list of team memb
    ```
    npm install
    ```
-3. Start the development server:
+3. Start both the Vite development server and the Express API server:
    ```
-   npm run dev
+   npm run dev:all
    ```
-4. Open your browser and navigate to the local server (usually http://localhost:5173)
+   This will start Vite on port 5173 and the Express server on port 3001.
+
+4. Open your browser and navigate to http://localhost:5173
+
+### Alternative Start Options
+
+- Run just the Vite development server:
+  ```
+  npm run dev
+  ```
+
+- Run just the Express API server:
+  ```
+  npm run dev:server
+  ```
+
+- For production:
+  ```
+  npm run build
+  npm start
+  ```
 
 ## API Usage
 
