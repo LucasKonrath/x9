@@ -52,8 +52,8 @@ function App() {
         <header className="mb-8 flex items-center">
           <img src="/x9.png" alt="X9 Logo" className="h-16 mr-4" />
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">X9</h1>
-            <p className="text-gray-600">Track GitHub activity of your team</p>
+            <h1 className="text-3xl font-bold text-white mb-2">X9</h1>
+            <p className="text-gray-400">Track GitHub activity of your team</p>
           </div>
         </header>
 
@@ -65,12 +65,12 @@ function App() {
 
         {loading && (
             <div className="flex justify-center my-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#22c55e]"></div>
             </div>
         )}
 
         {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded my-4" role="alert">
+            <div className="bg-red-900 border border-red-800 text-red-200 px-4 py-3 rounded my-4" role="alert">
               <p>{error}</p>
             </div>
         )}

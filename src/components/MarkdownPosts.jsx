@@ -10,18 +10,18 @@ function MarkdownPost({ title, content, date }) {
     const formattedDate = format(parsedDate, 'MMMM d, yyyy');
 
     return (
-        <div className="border rounded-lg mb-4 overflow-hidden">
+        <div className="border border-[#334155] rounded-lg mb-4 overflow-hidden bg-[#1e293b]">
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full px-4 py-2 text-left bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
+                className="w-full px-4 py-2 text-left bg-[#1e293b] hover:bg-[#334155] flex justify-between items-center"
             >
-                <span className="font-medium">{formattedDate}</span>
-                <span className="text-gray-500">
+                <span className="font-medium text-[#4ade80]">{formattedDate}</span>
+                <span className="text-gray-400">
           {isExpanded ? '▼' : '▶'}
         </span>
             </button>
             {isExpanded && (
-                <div className="p-4 prose max-w-none">
+                <div className="p-4 prose prose-invert max-w-none">
                     <ReactMarkdown>{content}</ReactMarkdown>
                 </div>
             )}
@@ -33,9 +33,9 @@ export default function MarkdownPosts({ posts }) {
     if (!posts || posts.length === 0) {
         return (
             <div className="mt-8">
-                <h2 className="text-2xl font-bold mb-4">Meeting Notes</h2>
-                <div className="bg-white shadow rounded-lg p-6">
-                    <p className="text-gray-500 text-center">No meeting notes found for this user.</p>
+                <h2 className="text-2xl font-bold mb-4 text-[#4ade80]">Meeting Notes</h2>
+                <div className="bg-[#1e293b] shadow rounded-lg p-6 border border-[#334155]">
+                    <p className="text-gray-400 text-center">No meeting notes found for this user.</p>
                 </div>
             </div>
         );
@@ -43,7 +43,7 @@ export default function MarkdownPosts({ posts }) {
 
     return (
         <div className="mt-8">
-            <h2 className="text-2xl font-bold mb-4">Meeting Notes</h2>
+            <h2 className="text-2xl font-bold mb-4 text-[#4ade80]">Meeting Notes</h2>
             {posts.map((post, index) => (
                 <MarkdownPost
                     key={index}
