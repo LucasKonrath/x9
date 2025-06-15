@@ -4,6 +4,7 @@ import CommitTimeline from './components/CommitTimeline';
 import UserSelector from './components/UserSelector';
 import MarkdownPosts from './components/MarkdownPosts';
 import MarkdownEditor from './components/MarkdownEditor';
+import GitHubContributionGraph from './components/GitHubContributionGraph';
 import { fetchUserEvents, fetchMarkdownPosts } from './services/githubService';
 
 const GITHUB_USERS = [
@@ -189,6 +190,7 @@ function App() {
 
         {!loading && !error && (
             <>
+              <GitHubContributionGraph username={selectedUser} />
               <CommitTimeline events={events} />
               <MarkdownPosts
                   posts={markdownPosts}

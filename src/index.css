@@ -40,6 +40,15 @@
   animation: collapse 0.2s ease-in forwards;
 }
 
+/* Animation delay utilities */
+.animation-delay-200 {
+  animation-delay: 0.2s;
+}
+
+.animation-delay-400 {
+  animation-delay: 0.4s;
+}
+
 body {
   background-color: #0f172a; /* dark-900 */
   color: #f3f4f6; /* gray-100 */
