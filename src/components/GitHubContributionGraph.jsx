@@ -3,19 +3,39 @@ import React from 'react';
 function GitHubContributionGraph({ username }) {
   // State to track if the image is loading
   const [isLoading, setIsLoading] = React.useState(true);
+  const [totalCommits, setTotalCommits] = React.useState(0);
 
   // GitHub contribution graph is loaded from an external service
   const contributionUrl = `https://ghchart.rshah.org/${username}`;
 
+  // Function to fetch and parse SVG data
+  const fetchTotalCommits = async () => {
+    try {
+      const response = await fetch(`/api/github-stats/${username}`);
+      const data = await response.json();
+      const commits = data.total['2025'] || 0;
+      setTotalCommits(commits);
+    } catch (error) {
+      console.error('Error fetching commit data:', error);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchTotalCommits();
+  }, [username]);
+
   return (
     <div className="mb-6 bg-[#1e293b] border border-[#334155] rounded-lg p-4 shadow-md">
       <div className="flex flex-col">
-        <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#4ade80]" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-          </svg>
-          Contribution Activity
-        </h3>
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-lg font-semibold text-white flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#4ade80]" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+            </svg>
+            Contribution Activity
+          </h3>
+          <span className="text-[#4ade80] font-medium">{totalCommits} Commits Last Year</span>
+        </div>
 
         <div className="bg-[#0f172a] rounded border border-[#334155] p-3 overflow-hidden">
           <div className="flex justify-center">

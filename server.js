@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const fsPromises = fs.promises;
+const axios = require('axios'); // Add this at the top with other imports
 const app = express();
 const PORT = process.env.PORT || 3001; // Using 3001 to avoid conflict with Vite
 
@@ -52,7 +53,6 @@ app.get('/api/posts/:username', (req, res) => {
   }
 });
 
-// Serve the index.html for all other routes (SPA support)
 // API endpoint to save markdown file
 app.post('/api/save-markdown', async (req, res) => {
   try {
@@ -85,6 +85,33 @@ app.post('/api/save-markdown', async (req, res) => {
   } catch (error) {
     console.error('Error saving markdown:', error);
     res.status(500).json({ message: 'Server error while saving markdown' });
+  }
+});
+
+// Add this before the catch-all route
+app.get('/api/github-contributions/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const response = await axios.get(`https://ghchart.rshah.org/${username}`, {
+      responseType: 'text'
+    });
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.send(response.data);
+  } catch (error) {
+    console.error('Error fetching GitHub contributions:', error);
+    res.status(500).send('Error fetching GitHub contributions');
+  }
+});
+
+// Add this before the catch-all route
+app.get('/api/github-stats/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const response = await axios.get(`https://github-contributions-api.jogruber.de/v4/${username}`);
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error fetching GitHub stats:', error);
+    res.status(500).json({ error: 'Error fetching GitHub stats' });
   }
 });
 
