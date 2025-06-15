@@ -2,6 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom animations for modal */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Collapsible post animations */
+@keyframes expand {
+  from { max-height: 0; opacity: 0.5; }
+  to { max-height: 2000px; opacity: 1; }
+}
+
+@keyframes collapse {
+  from { max-height: 2000px; opacity: 1; }
+  to { max-height: 0; opacity: 0.5; }
+}
+
+.post-expand {
+  animation: expand 0.3s ease-out forwards;
+}
+
+.post-collapse {
+  animation: collapse 0.2s ease-in forwards;
+}
+
 body {
   background-color: #0f172a; /* dark-900 */
   color: #f3f4f6; /* gray-100 */

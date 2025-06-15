@@ -1,57 +1,83 @@
-// src/components/MarkdownPosts.jsx
+
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { format, parse } from 'date-fns';
 
-function MarkdownPost({ title, content, date }) {
-    const [isExpanded, setIsExpanded] = useState(false);
+function MarkdownPosts({ posts, onEdit }) {
+    // State to track which posts are expanded
+    const [expandedPosts, setExpandedPosts] = useState({});
 
-    const parsedDate = parse(title.slice(0, 10), 'yyyy-MM-dd', new Date());
-    const formattedDate = format(parsedDate, 'MMMM d, yyyy');
+    // Toggle expanded state for a post
+    const togglePost = (postIndex) => {
+        setExpandedPosts(prev => ({
+            ...prev,
+            [postIndex]: !prev[postIndex]
+        }));
+    };
 
-    return (
-        <div className="border border-[#334155] rounded-lg mb-4 overflow-hidden bg-[#1e293b]">
-            <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full px-4 py-2 text-left bg-[#1e293b] hover:bg-[#334155] flex justify-between items-center"
-            >
-                <span className="font-medium text-[#4ade80]">{formattedDate}</span>
-                <span className="text-gray-400">
-          {isExpanded ? '▼' : '▶'}
-        </span>
-            </button>
-            {isExpanded && (
-                <div className="p-4 prose prose-invert max-w-none">
-                    <ReactMarkdown>{content}</ReactMarkdown>
-                </div>
-            )}
-        </div>
-    );
-}
-
-export default function MarkdownPosts({ posts }) {
     if (!posts || posts.length === 0) {
         return (
             <div className="mt-8">
-                <h2 className="text-2xl font-bold mb-4 text-[#4ade80]">Meeting Notes</h2>
-                <div className="bg-[#1e293b] shadow rounded-lg p-6 border border-[#334155]">
-                    <p className="text-gray-400 text-center">No meeting notes found for this user.</p>
-                </div>
+                <h2 className="text-2xl font-bold text-white mb-4">Meeting Notes</h2>
+                <p className="text-gray-400">No meeting notes found.</p>
             </div>
         );
     }
 
     return (
         <div className="mt-8">
-            <h2 className="text-2xl font-bold mb-4 text-[#4ade80]">Meeting Notes</h2>
-            {posts.map((post, index) => (
-                <MarkdownPost
-                    key={index}
-                    title={post.title}
-                    content={post.content}
-                    date={post.date}
-                />
-            ))}
+            <h2 className="text-2xl font-bold text-white mb-4">
+                Meeting Notes
+                <span className="text-sm font-normal text-gray-400 ml-2">(click to expand/collapse)</span>
+            </h2>
+            <div className="space-y-4">
+                {posts.map((post, index) => (
+                    <div key={index} className="bg-[#1e293b] border border-[#334155] rounded-lg overflow-hidden transition-all duration-300">
+                        <div 
+                            className="flex justify-between items-center p-4 cursor-pointer hover:bg-[#2d3748] transition-colors duration-200 select-none"
+                            onClick={() => togglePost(index)}
+                            title={expandedPosts[index] ? 'Click to collapse' : 'Click to expand'}
+                        >
+                            <div className="flex items-center space-x-4">
+                                <div className="flex items-center">
+                                    <svg 
+                                        xmlns="http://www.w3.org/2000/svg" 
+                                        className={`h-5 w-5 text-[#4ade80] transition-transform duration-300 ${expandedPosts[index] ? 'transform rotate-90' : ''}`}
+                                        viewBox="0 0 20 20" 
+                                        fill="currentColor"
+                                    >
+                                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                    <h3 className="text-xl font-semibold text-white ml-2">{post.title}</h3>
+                                </div>
+                                <span className="text-sm text-gray-400">{post.date}</span>
+                            </div>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation(); // Prevent triggering the parent onClick
+                                    console.log('Edit button clicked for post:', post);
+                                    onEdit(post);
+                                }}
+                                className="px-3 py-1 bg-[#334155] text-[#4ade80] border border-[#22c55e] rounded-md hover:bg-[#475569] transition-colors duration-200 text-sm"
+                            >
+                                Edit
+                            </button>
+                        </div>
+
+                        {/* Collapsible content */}
+                        <div 
+                            className={`overflow-hidden ${expandedPosts[index] ? 'post-expand' : 'post-collapse'}`}
+                        >
+                            <div className="p-4 pt-0 border-t border-[#334155]">
+                                <div className="prose prose-invert prose-green max-w-none">
+                                    <ReactMarkdown>{post.content}</ReactMarkdown>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }
+
+export default MarkdownPosts;

@@ -28,14 +28,21 @@ export const fetchMarkdownPosts = async (username) => {
     let files = [];
     const apiBaseUrl = getApiBaseUrl();
   
+    console.log('Fetching markdown posts for user:', username);
+    console.log('Using API base URL:', apiBaseUrl);
+
     try {
       // Try to get list from API
       const indexResponse = await fetch(`${apiBaseUrl}/api/posts/${username}`);
+      console.log('API response status:', indexResponse.status);
+
       if (indexResponse.ok) {
         files = await indexResponse.json();
+        console.log('Files returned from API:', files);
       }
     } catch (apiError) {
       console.log('API endpoint not available, using hardcoded file paths');
+      console.error('API error:', apiError);
     }
 
     // If no files from API, use hardcoded list (for development)
@@ -52,16 +59,26 @@ export const fetchMarkdownPosts = async (username) => {
     const posts = await Promise.all(
       files.map(async (filename) => {
         try {
-          const response = await fetch(`${apiBaseUrl}/public/${username}/${filename}`);
+          const url = `${apiBaseUrl}/public/${username}/${filename}`;
+          console.log(`Fetching file from: ${url}`);
+
+          const response = await fetch(url);
+          console.log(`Response status for ${filename}: ${response.status}`);
+
           if (!response.ok) {
             console.error(`Failed to fetch ${filename}: ${response.status}`);
             return null;
           }
 
           const content = await response.text();
+          console.log(`Successfully loaded ${filename}, content length: ${content.length}`);
+
+          // Make sure content is not null or undefined
+          const safeContent = content || '';
+
           return {
             title: filename,
-            content,
+            content: safeContent,
             date: filename.slice(0, 10)
           };
         } catch (fileError) {

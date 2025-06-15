@@ -9,7 +9,9 @@
 export const getApiBaseUrl = () => {
   // In development mode, use the Express server on port 3001
   // In production, use the same origin
-  return import.meta.env.DEV ? 'http://localhost:3001' : '';
+  const baseUrl = import.meta.env.DEV ? 'http://localhost:3001' : '';
+  console.log('API Base URL:', baseUrl);
+  return baseUrl;
 };
 
 /**

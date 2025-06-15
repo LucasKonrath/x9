@@ -1,14 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import CommitTimeline from './components/CommitTimeline';
 import UserSelector from './components/UserSelector';
 import MarkdownPosts from './components/MarkdownPosts';
 import MarkdownEditor from './components/MarkdownEditor';
 import { fetchUserEvents, fetchMarkdownPosts } from './services/githubService';
-
-// Import the API base URL helper
-const { getApiBaseUrl } = await import('./utils/fileUtils');
-const apiBaseUrl = getApiBaseUrl();
-
 
 const GITHUB_USERS = [
   'LucasKonrath',
@@ -29,6 +25,8 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [saveStatus, setSaveStatus] = useState({ saving: false, error: null, success: false });
+  const [editingPost, setEditingPost] = useState(null);
+  const [editorVisible, setEditorVisible] = useState(false);
 
   // Function to save markdown post
   const saveMarkdownPost = async (username, fileName, content) => {
@@ -49,8 +47,11 @@ function App() {
 
       console.log('Request body:', requestBody);
 
+      // Import the API base URL helper
+      const { getApiBaseUrl } = await import('./utils/fileUtils');
+      const apiBaseUrl = getApiBaseUrl();
 
-    // Send the data to the server (use full URL with correct port)
+      // Send the data to the server (use full URL with correct port)
       const response = await fetch(`${apiBaseUrl}/api/save-markdown`, {
         method: 'POST',
         headers: {
@@ -96,17 +97,53 @@ function App() {
     }
   };
 
+  // Function to handle editing a post
+  const handleEditPost = (post) => {
+    console.log('handleEditPost called with:', post);
+    // Force state update with a new object reference
+    setEditingPost({...post});
+    console.log('editingPost state set to:', {...post});
+
+    // Explicitly set editor to visible
+    setEditorVisible(true);
+    console.log('Editor visibility set to true');
+
+    // Double-check that the state is correctly set after a short delay
+    setTimeout(() => {
+      console.log('editingPost state after timeout:', editingPost);
+      console.log('editorVisible state after timeout:', editorVisible);
+    }, 100);
+  };
+
+  // Function to cancel editing
+  const handleCancelEdit = () => {
+    setEditingPost(null);
+    setEditorVisible(false);
+    console.log('Editor visibility set to false in handleCancelEdit');
+  };
+
   useEffect(() => {
     const loadUserData = async () => {
       setLoading(true);
       setError(null);
       try {
+        console.log('Loading data for user:', selectedUser);
+
         // Fetch GitHub events
         const userEvents = await fetchUserEvents(selectedUser);
         setEvents(userEvents);
+        console.log('GitHub events loaded:', userEvents.length);
 
         // Fetch markdown posts directly from the files in public folder
+        console.log('Fetching markdown posts...');
         const posts = await fetchMarkdownPosts(selectedUser);
+        console.log('Markdown posts loaded:', posts.length);
+
+        // Detailed log of post structure
+        if (posts.length > 0) {
+          console.log('First post structure:', JSON.stringify(posts[0], null, 2));
+        }
+
         setMarkdownPosts(posts);
       } catch (err) {
         setError('Failed to load data. ' + err.message);
@@ -118,6 +155,8 @@ function App() {
     };
 
     loadUserData();
+    // Reset editing state when user changes
+    setEditingPost(null);
   }, [selectedUser]);
 
   return (
@@ -151,19 +190,31 @@ function App() {
         {!loading && !error && (
             <>
               <CommitTimeline events={events} />
-              <MarkdownPosts posts={markdownPosts} />
-              <MarkdownEditor username={selectedUser} onSave={saveMarkdownPost} />
+              <MarkdownPosts
+                  posts={markdownPosts}
+                  onEdit={handleEditPost}
+              />
+              <div className="mt-8 flex justify-end">
+                <MarkdownEditor
+                    key={editingPost ? `edit-${editingPost.title}` : 'create-new'}
+                    username={selectedUser}
+                    onSave={saveMarkdownPost}
+                    editingPost={editingPost}
+                    onCancelEdit={handleCancelEdit}
+                    forceOpen={editorVisible}
+                />
+              </div>
 
               {saveStatus.success && (
-                <div className="mt-4 bg-[#15803d] text-white px-4 py-2 rounded-md animate-pulse">
-                  Notes saved successfully!
-                </div>
+                  <div className="mt-4 bg-[#15803d] text-white px-4 py-2 rounded-md animate-pulse">
+                    Notes {editingPost ? 'updated' : 'saved'} successfully!
+                  </div>
               )}
 
               {saveStatus.error && (
-                <div className="mt-4 bg-red-900 border border-red-800 text-red-200 px-4 py-3 rounded">
-                  Error: {saveStatus.error}
-                </div>
+                  <div className="mt-4 bg-red-900 border border-red-800 text-red-200 px-4 py-3 rounded">
+                    Error: {saveStatus.error}
+                  </div>
               )}
             </>
         )}
@@ -172,4 +223,3 @@ function App() {
 }
 
 export default App;
-

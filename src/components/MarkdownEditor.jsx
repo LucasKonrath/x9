@@ -1,12 +1,49 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 
-function MarkdownEditor({ username, onSave }) {
+function MarkdownEditor({ username, onSave, editingPost, onCancelEdit, forceOpen }) {
   const [isOpen, setIsOpen] = useState(false);
   const [markdown, setMarkdown] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  // Effect to handle editing mode
+  useEffect(() => {
+    console.log('MarkdownEditor useEffect triggered with editingPost:', editingPost);
+    if (editingPost) {
+      console.log('Setting markdown content:', editingPost.content);
+      setMarkdown(editingPost.content);
+      console.log('Opening editor (setIsOpen(true))');
+      setIsOpen(true);
+    }
+  }, [editingPost]);
+
+  // Effect to handle forceOpen prop
+  useEffect(() => {
+    console.log('forceOpen prop changed to:', forceOpen);
+    if (forceOpen !== undefined) {
+      console.log('Setting isOpen to:', forceOpen);
+      setIsOpen(forceOpen);
+    }
+  }, [forceOpen]);
+
+  // Add keyboard event listener for ESC key
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape' && isOpen) {
+        console.log('ESC key pressed, closing modal');
+        handleCancel();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscKey);
+    return () => window.removeEventListener('keydown', handleEscKey);
+  }, [isOpen]);
+
+  // Add a separate useEffect to log state changes for debugging
+  useEffect(() => {
+    console.log('isOpen state changed to:', isOpen);
+  }, [isOpen]);
 
   const handleSave = async () => {
     if (!markdown.trim()) {
@@ -18,12 +55,18 @@ function MarkdownEditor({ username, onSave }) {
     setError(null);
 
     try {
-      // Generate a filename with current date (using the required format yyyy-MM-dd.md)
-      const today = new Date();
-      const fileName = `${format(today, 'yyyy-MM-dd')}.md`;
+      let fileName;
+
+      if (editingPost) {
+        // Use the existing filename when editing
+        fileName = editingPost.title;
+      } else {
+        // Generate a filename with current date for new posts
+        const today = new Date();
+        fileName = `${format(today, 'yyyy-MM-dd')}.md`;
+      }
 
       console.log('Saving file with name:', fileName);
-      console.log('Format pattern used:', 'yyyy-MM-dd');
 
       // Call the onSave callback with the markdown content and filename
       await onSave(username, fileName, markdown);
@@ -31,6 +74,11 @@ function MarkdownEditor({ username, onSave }) {
       // Clear the editor and close it
       setMarkdown('');
       setIsOpen(false);
+
+      // If we were editing, call the cancel edit callback
+      if (editingPost && onCancelEdit) {
+        onCancelEdit();
+      }
     } catch (err) {
       setError(`Failed to save markdown: ${err.message}`);
     } finally {
@@ -38,24 +86,69 @@ function MarkdownEditor({ username, onSave }) {
     }
   };
 
+  const handleCancel = () => {
+    console.log('Cancel button clicked');
+    setIsOpen(false);
+    setMarkdown('');
+    setError(null);
+
+    // If we were editing, call the cancel edit callback
+    if (editingPost && onCancelEdit) {
+      console.log('Calling onCancelEdit to reset editing state');
+      onCancelEdit();
+    }
+  };
+
+  const isEditing = !!editingPost;
+
   return (
       <div className="mt-6">
-        {!isOpen ? (
-            <button
-                onClick={() => setIsOpen(true)}
-                className="px-4 py-2 bg-[#1e293b] text-[#4ade80] border border-[#22c55e] rounded-md hover:bg-[#334155] transition-colors duration-200"
+        {/* Always log what we're about to render */}
+        {console.log('Rendering MarkdownEditor with isOpen:', isOpen, 'editingPost:', !!editingPost)}
+
+        {/* Add Meeting Notes button - only show if editor is closed */}
+        <button
+            onClick={() => {
+              console.log('Add Meeting Notes button clicked');
+              setIsOpen(true);
+            }}
+            className="px-4 py-2 bg-[#1e293b] text-[#4ade80] border border-[#22c55e] rounded-md hover:bg-[#334155] transition-colors duration-200"
+        >
+          Add Meeting Notes
+        </button>
+
+        {/* Modal overlay - only show if isOpen is true */}
+        {isOpen && (
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 animate-fadeIn"
+              onClick={(e) => {
+                // Close modal when clicking on the backdrop (not on the content)
+                if (e.target === e.currentTarget) {
+                  handleCancel();
+                }
+              }}
             >
-              Add Meeting Notes
-            </button>
-        ) : (
-            <div className="bg-[#1e293b] border border-[#334155] rounded-lg p-4">
-              <h3 className="text-lg font-medium text-white mb-3">Add Notes for {username}</h3>
+              <div className="bg-[#1e293b] border border-[#334155] rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto animate-slideIn shadow-xl">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-medium text-white">
+                    {isEditing ? `Edit Notes: ${editingPost.title}` : `Add Notes for ${username}`}
+                  </h3>
+                  <button 
+                    onClick={handleCancel}
+                    className="text-gray-400 hover:text-white transition-colors"
+                    aria-label="Close"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
 
               <textarea
                   value={markdown}
                   onChange={(e) => setMarkdown(e.target.value)}
                   placeholder="# Meeting Notes\n\nEnter your markdown content here..."
-                  className="w-full h-64 p-3 bg-[#0f172a] text-gray-100 border border-[#334155] rounded-md focus:outline-none focus:ring-2 focus:ring-[#22c55e] focus:border-transparent font-mono"
+                  className="w-full h-80 p-4 bg-[#0f172a] text-gray-100 border border-[#334155] rounded-md focus:outline-none focus:ring-2 focus:ring-[#22c55e] focus:border-transparent font-mono"
               />
 
               {error && (
@@ -66,11 +159,7 @@ function MarkdownEditor({ username, onSave }) {
 
               <div className="mt-4 flex justify-end space-x-3">
                 <button
-                    onClick={() => {
-                      setIsOpen(false);
-                      setMarkdown('');
-                      setError(null);
-                    }}
+                    onClick={handleCancel}
                     className="px-4 py-2 bg-transparent text-gray-400 border border-[#475569] rounded-md hover:bg-[#334155]"
                     disabled={isSaving}
                 >
@@ -88,12 +177,13 @@ function MarkdownEditor({ username, onSave }) {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Saving...
+                        {isEditing ? 'Updating...' : 'Saving...'}
                       </>
-                  ) : 'Save Notes'}
+                  ) : (isEditing ? 'Update Notes' : 'Save Notes')}
                 </button>
               </div>
             </div>
+          </div>
         )}
       </div>
   );
