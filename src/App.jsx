@@ -5,6 +5,11 @@ import MarkdownPosts from './components/MarkdownPosts';
 import MarkdownEditor from './components/MarkdownEditor';
 import { fetchUserEvents, fetchMarkdownPosts } from './services/githubService';
 
+// Import the API base URL helper
+const { getApiBaseUrl } = await import('./utils/fileUtils');
+const apiBaseUrl = getApiBaseUrl();
+
+
 const GITHUB_USERS = [
   'LucasKonrath',
   'xmacedo',
@@ -44,8 +49,9 @@ function App() {
 
       console.log('Request body:', requestBody);
 
-      // Send the data to the server
-      const response = await fetch('/api/save-markdown', {
+
+    // Send the data to the server (use full URL with correct port)
+      const response = await fetch(`${apiBaseUrl}/api/save-markdown`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
