@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>X9 - GitHub Activity Tracker</title>
+  <script>
+    // Debugging helper for network requests
+    const originalFetch = window.fetch;
+    window.fetch = async function(url, options) {
+      console.log(`Fetch request to: ${url}`, options);
+      try {
+        const response = await originalFetch(url, options);
+        console.log(`Fetch response from: ${url}`, response);
+        return response;
+      } catch (error) {
+        console.error(`Fetch error for: ${url}`, error);
+        throw error;
+      }
+    };
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>

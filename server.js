@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const fsPromises = fs.promises;
 const app = express();
 const PORT = process.env.PORT || 3001; // Using 3001 to avoid conflict with Vite
 
@@ -11,8 +12,12 @@ const isDevelopment = process.env.NODE_ENV !== 'production';
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   next();
 });
+
+// Parse JSON bodies
+app.use(express.json());
 
 // Serve static files
 if (isDevelopment) {
@@ -37,8 +42,8 @@ app.get('/api/posts/:username', (req, res) => {
     // Get all files in the user directory
     const files = fs.readdirSync(userDir);
 
-    // Filter for markdown files with yyyy-MM-dd naming pattern
-    const markdownFiles = files.filter(file => /^\d{4}-\d{2}-\d{2}\.md$/.test(file));
+    // Filter for markdown files with yyyy-MM-dd.md or yyyy-MM-dd-*.md naming pattern
+    const markdownFiles = files.filter(file => /^\d{4}-\d{2}-\d{2}(\.md|-.*\.md)$/.test(file));
 
     res.json(markdownFiles);
   } catch (error) {
@@ -48,6 +53,41 @@ app.get('/api/posts/:username', (req, res) => {
 });
 
 // Serve the index.html for all other routes (SPA support)
+// API endpoint to save markdown file
+app.post('/api/save-markdown', async (req, res) => {
+  try {
+    const { username, fileName, content } = req.body;
+
+    if (!username || !fileName || !content) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    // Validate filename format (must be yyyy-MM-dd.md)
+    if (!/^\d{4}-\d{2}-\d{2}\.md$/.test(fileName)) {
+      console.log('Invalid filename format:', fileName);
+      return res.status(400).json({ message: 'The string did not match the expected pattern. Filename must be in format yyyy-MM-dd.md' });
+    }
+
+    // Create directory for user if it doesn't exist
+    const userDir = path.join(__dirname, 'public', username);
+    try {
+      await fsPromises.mkdir(userDir, { recursive: true });
+    } catch (err) {
+      // Directory might already exist
+      console.log(`Directory creation for ${username}: ${err.message}`);
+    }
+
+    // Write the markdown file
+    const filePath = path.join(userDir, fileName);
+    await fsPromises.writeFile(filePath, content, 'utf8');
+
+    res.status(200).json({ message: 'Markdown saved successfully' });
+  } catch (error) {
+    console.error('Error saving markdown:', error);
+    res.status(500).json({ message: 'Server error while saving markdown' });
+  }
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
