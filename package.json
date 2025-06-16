@@ -23,7 +23,7 @@
   "scripts": {
     "dev": "vite",
     "dev:server": "nodemon server.js",
-    "dev:all": "concurrently \"npm run dev\" \"npm run dev:server\"",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:server\" \"sleep 4 && open http://localhost:5173\"",
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server.js"
