@@ -115,6 +115,50 @@ app.get('/api/github-stats/:username', async (req, res) => {
   }
 });
 
+// Add this before the catch-all route
+app.get('/api/github-corporate/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const githubToken = process.env.GITHUB_TOKEN;
+
+    const response = await axios.post('https://api.github.com/graphql',
+      {
+        query: `
+          query($userName: String!) {
+            user(login: $userName) {
+              contributionsCollection(from:"2025-01-01T00:00:00Z") {
+                contributionCalendar {
+                  totalContributions
+                  weeks {
+                    contributionDays {
+                      contributionCount
+                      date
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `,
+        variables: {
+          userName: username
+        }
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${githubToken}`,
+          'Content-Type': 'application/json',
+        }
+      }
+    );
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error fetching GitHub corporate stats:', error);
+    res.status(500).json({ error: 'Error fetching GitHub corporate stats' });
+  }
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });

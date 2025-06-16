@@ -13,6 +13,11 @@ export default defineConfig({
         target: 'https://github-contributions-api.jogruber.de/v4',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/github-stats/, '')
+      },
+      '/api/github-corporate': {
+        target: 'https://api.github.com',
+        changeOrigin: true,
+        rewrite: (path) => '/graphql'
       }
     }
   }
