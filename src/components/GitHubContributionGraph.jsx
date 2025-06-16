@@ -3,7 +3,7 @@ import { contributionsQuery, fetchGraphQL } from '../utils/graphql';
 import CorporateContributionHeatmap from './CorporateContributionHeatmap';
 import { format } from 'date-fns';
 
-function GitHubContributionGraph({ username, corporateUser }) {
+function GitHubContributionGraph({ username, corporateUser, minimal = false }) {
   const [isLoading, setIsLoading] = React.useState(true);
   const [contributions, setContributions] = React.useState(null);
   const [tooltipContent, setTooltipContent] = useState('');
@@ -60,15 +60,17 @@ function GitHubContributionGraph({ username, corporateUser }) {
       wSum + (day.date.startsWith('2025') ? day.contributionCount : 0), 0), 0) || 0;
 
   return (
-    <div>
-      <div className="mb-6 bg-[#1e293b] border border-[#334155] rounded-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-[#334155]">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-lg font-semibold text-white flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#4ade80]" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-              </svg>
-              Contribution Activity
+    <div className={minimal ? '' : 'mb-6'}>
+      <div className={`bg-[#1e293b] border border-[#334155] rounded-lg overflow-hidden ${minimal ? 'text-sm' : ''}`}>
+        <div className="px-4 py-3 border-b border-[#334155]">
+          <div className="flex justify-between items-center">
+            <h3 className="text-white flex items-center font-semibold">
+              {!minimal && (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#4ade80]" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                </svg>
+              )}
+              {minimal ? 'Public Activity' : 'Contribution Activity'}
             </h3>
             <span className="text-[#4ade80] font-medium">
               {total2025Contributions} Commits in 2025
@@ -76,7 +78,7 @@ function GitHubContributionGraph({ username, corporateUser }) {
           </div>
         </div>
 
-        <div className="p-6">
+        <div className={`${minimal ? 'p-3' : 'p-6'}`}>
           <div className="bg-[#0f172a] rounded border border-[#334155] p-3">
             <div className="flex justify-center min-h-[200px] items-center">
               {isLoading ? (
@@ -133,7 +135,7 @@ function GitHubContributionGraph({ username, corporateUser }) {
         </div>
       </div>
       
-      {corporateUser && <CorporateContributionHeatmap corporateUser={corporateUser} />}
+      {!minimal && corporateUser && <CorporateContributionHeatmap corporateUser={corporateUser} />}
     </div>
   );
 }

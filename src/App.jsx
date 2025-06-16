@@ -4,6 +4,7 @@ import UserSelector from './components/UserSelector';
 import MarkdownPosts from './components/MarkdownPosts';
 import MarkdownEditor from './components/MarkdownEditor';
 import GitHubContributionGraph from './components/GitHubContributionGraph';
+import TeamReport from './components/TeamReport';
 import { fetchUserEvents, fetchMarkdownPosts } from './services/githubService';
 
 const GITHUB_USERS = [
@@ -44,6 +45,7 @@ function App() {
   const [saveStatus, setSaveStatus] = useState({ saving: false, error: null, success: false });
   const [editingPost, setEditingPost] = useState(null);
   const [editorVisible, setEditorVisible] = useState(false);
+  const [showTeamReport, setShowTeamReport] = useState(false);
 
   // Function to save markdown post
   const saveMarkdownPost = async (username, fileName, content) => {
@@ -184,11 +186,19 @@ function App() {
           <div className="flex-1">
             <h1 className="text-xl font-semibold text-github-text">X9 Team Dashboard</h1>
           </div>
-          <UserSelector
-            users={GITHUB_USERS}
-            selectedUser={selectedUser}
-            onSelectUser={setSelectedUser}
-          />
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowTeamReport(true)}
+              className="px-4 py-2 bg-[#1e293b] text-[#4ade80] border border-[#22c55e] rounded-md hover:bg-[#334155] transition-colors duration-200"
+            >
+              Team Report
+            </button>
+            <UserSelector
+              users={GITHUB_USERS}
+              selectedUser={selectedUser}
+              onSelectUser={setSelectedUser}
+            />
+          </div>
         </div>
       </header>
 
@@ -228,6 +238,13 @@ function App() {
           </>
         )}
       </main>
+
+      {showTeamReport && (
+        <TeamReport 
+          users={GITHUB_USERS}
+          onClose={() => setShowTeamReport(false)}
+        />
+      )}
     </div>
   );
 }

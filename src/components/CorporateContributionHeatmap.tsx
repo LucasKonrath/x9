@@ -12,9 +12,13 @@ interface ContributionWeek {
 
 interface CorporateContributionHeatmapProps {
   corporateUser: string;
+  minimal?: boolean;
 }
 
-const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> = ({ corporateUser }) => {
+const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> = ({ 
+  corporateUser,
+  minimal = false 
+}) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalContributions, setTotalContributions] = useState(0);
@@ -136,11 +140,11 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
   };
 
   return (
-    <div className="bg-[#1e293b] border border-[#334155] rounded-lg overflow-hidden mt-4">
-      <div className="px-6 py-4 border-b border-[#334155]">
+    <div className={`bg-[#1e293b] border border-[#334155] rounded-lg overflow-hidden ${minimal ? 'text-sm' : 'mt-4'}`}>
+      <div className="px-4 py-3 border-b border-[#334155]">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-white flex items-center">
-            Corporate Contribution Activity
+          <h3 className="text-white font-semibold flex items-center">
+            {minimal ? 'Corporate Activity' : 'Corporate Contribution Activity'}
           </h3>
           <span className="text-[#4ade80] font-medium">
             {total2025Contributions} Corporate Commits in 2025
@@ -148,7 +152,7 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
         </div>
       </div>
 
-      <div className="p-6">
+      <div className={`${minimal ? 'p-3' : 'p-6'}`}>
         <div className="bg-[#0f172a] rounded border border-[#334155] p-3">
           {isLoading ? (
             <div className="h-32 flex items-center justify-center">
@@ -192,16 +196,18 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
             </div>
           )}
           {/* Add this inside the bg-[#0f172a] div, after the contribution grid */}
-          <div className="mt-3 text-center">
-            <a 
-              href={getCorporateProfileUrl(corporateUser)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-[#4ade80] hover:text-[#86efac] hover:underline transition-colors"
-            >
-              View full profile on GitHub Enterprise
-            </a>
-          </div>
+          {!minimal && (
+            <div className="mt-3 text-center">
+              <a 
+                href={getCorporateProfileUrl(corporateUser)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-[#4ade80] hover:text-[#86efac] hover:underline transition-colors"
+              >
+                View full profile on GitHub Enterprise
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>
