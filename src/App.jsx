@@ -242,6 +242,7 @@ function App() {
       {showTeamReport && (
         <TeamReport 
           users={GITHUB_USERS}
+          corporateUsers={CORPORATE_USERS}
           onClose={() => setShowTeamReport(false)}
         />
       )}

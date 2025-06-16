@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import CorporateContributionHeatmap from './CorporateContributionHeatmap';
 import GitHubContributionGraph from './GitHubContributionGraph';
 
-function TeamReport({ users, onClose }) {
+function TeamReport({ users, corporateUsers, onClose }) {
   const [isLoading, setIsLoading] = useState(true);
   const [teamData, setTeamData] = useState([]);
   const [error, setError] = useState(null);
@@ -16,7 +16,10 @@ function TeamReport({ users, onClose }) {
       setIsLoading(true);
       setError(null);
       try {
-        const userData = await Promise.all(users.map(async (username) => {
+        const userData = await Promise.all(users.map(async (username, index) => {
+          // Get corresponding corporate username
+          const corporateUser = corporateUsers[index];
+          
           // Fetch personal contributions
           const now = new Date();
           const fromDate = new Date(now);
@@ -30,7 +33,7 @@ function TeamReport({ users, onClose }) {
 
           // Fetch corporate contributions
           const corporateData = await fetchGraphQL(contributionsQuery, {
-            username,
+            username: corporateUser,
             from: '2025-01-01T00:00:00Z',
             to: now.toISOString()
           }, false);
@@ -50,6 +53,7 @@ function TeamReport({ users, onClose }) {
 
           return {
             username,
+            corporateUser,
             personal2025Contributions,
             corporate2025Contributions,
             latestNote
@@ -66,7 +70,7 @@ function TeamReport({ users, onClose }) {
     };
 
     fetchTeamData();
-  }, [users]);
+  }, [users, corporateUsers]);
 
   if (error) {
     return (
@@ -137,9 +141,21 @@ function TeamReport({ users, onClose }) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <GitHubContributionGraph username={userData.username} minimal={true} />
-                  <CorporateContributionHeatmap corporateUser={userData.username} minimal={true} />
+                <div className="flex flex-col gap-4 mb-4">
+                  <div className="w-full">
+                    <p className="text-sm text-gray-400 mb-2">Personal Contributions</p>
+                    <GitHubContributionGraph 
+                      username={userData.username} 
+                      minimal={true} 
+                    />
+                  </div>
+                  <div className="w-full">
+                    <p className="text-sm text-gray-400 mb-2">Corporate Contributions</p>
+                    <CorporateContributionHeatmap 
+                      corporateUser={userData.corporateUser}
+                      minimal={true} 
+                    />
+                  </div>
                 </div>
 
                 {userData.latestNote && (
