@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { contributionsQuery, fetchGraphQL } from '../utils/graphql';
 import CorporateContributionHeatmap from './CorporateContributionHeatmap';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 
 function GitHubContributionGraph({ username, corporateUser }) {
   const [isLoading, setIsLoading] = React.useState(true);
@@ -45,8 +45,9 @@ function GitHubContributionGraph({ username, corporateUser }) {
 
   const handleSquareHover = (event, date, count) => {
     const rect = event.currentTarget.getBoundingClientRect();
+    const localDate = new Date(date);
     
-    setTooltipContent(`${count} contributions on ${format(parseISO(date), 'MMM d, yyyy')}`);
+    setTooltipContent(`${count} contributions on ${format(localDate, 'MMM d, yyyy')}`);
     setTooltipPosition({
       x: rect.left + (rect.width / 2),
       y: rect.top - 8

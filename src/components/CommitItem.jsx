@@ -2,6 +2,11 @@ import React from 'react';
 import { format, parseISO } from 'date-fns';
 
 function CommitItem({ event }) {
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return format(date, 'p', { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+  };
+
   return (
     <div className="p-6 hover:bg-[#1e293b] transition duration-150">
       <div className="flex items-start">
@@ -32,7 +37,7 @@ function CommitItem({ event }) {
               </a>
             </h3>
             <span className="text-xs text-gray-400">
-              {format(parseISO(event.created_at), 'h:mm a')}
+              {formatDate(event.created_at)}
             </span>
           </div>
 

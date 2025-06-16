@@ -103,7 +103,8 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
   
 
   const formatTooltip = (date: string, count: number) => {
-    const formattedDate = format(parseISO(date), 'MMMM d, yyyy');
+    const localDate = new Date(date);
+    const formattedDate = format(localDate, 'MMMM d, yyyy');
     const commitText = count === 1 ? 'commit' : 'commits';
     return `${count} ${commitText} on ${formattedDate}`;
   };

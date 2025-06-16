@@ -13,9 +13,13 @@ function CommitTimeline({ events }) {
     event.payload.commits.length > 0
   );
 
-  // Group events by date
+  // Group events by date using local timezone
   const groupedEvents = pushEvents.reduce((acc, event) => {
-    const date = format(parseISO(event.created_at), 'yyyy-MM-dd');
+    const date = new Date(event.created_at).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
     if (!acc[date]) {
       acc[date] = [];
     }
@@ -64,7 +68,12 @@ function CommitTimeline({ events }) {
           <div key={date} className="bg-[#1e293b] shadow rounded-lg overflow-hidden border border-[#334155]">
             <div className="bg-[#1e293b] px-6 py-4 border-b border-[#334155]">
               <h2 className="text-lg font-semibold text-[#4ade80]">
-                {format(new Date(date), 'EEEE, MMMM d, yyyy')}
+                {new Date(date).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
               </h2>
             </div>
             <div className="divide-y divide-[#334155]">
