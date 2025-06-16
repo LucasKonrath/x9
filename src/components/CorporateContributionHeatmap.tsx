@@ -28,8 +28,9 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
       try {
         setError(null);
         setIsLoading(true);
+        
         const now = new Date();
-        const fromDate = new Date();
+        const fromDate = new Date(now);
         fromDate.setDate(now.getDate() - 365); // Fetch data for the last 365 days
         const fromIso = fromDate.toISOString();
         const tomorrow = new Date();
@@ -40,9 +41,7 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_GITHUB_TOKEN}`,
-            'X-Github-Next-Global-ID': '1'
+            'Authorization': `Bearer ${import.meta.env.VITE_GITHUB_TOKEN}`
           },
           body: JSON.stringify({
             query: `query($username: String!, $from: DateTime!, $to: DateTime!) {
@@ -60,7 +59,11 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
                 }
               }
             }`,
-            variables: { username: corporateUser, from: fromIso, to: toIso }
+            variables: { 
+              username: corporateUser,
+              from: fromIso,
+              to: toIso
+            }
           })
         });
 
@@ -115,13 +118,11 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
 
   const handleSquareHover = (event: React.MouseEvent, date: string, count: number) => {
     const rect = event.currentTarget.getBoundingClientRect();
-    const container = event.currentTarget.closest('.contribution-container');
-    const containerRect = container?.getBoundingClientRect() || { left: 0, top: 0 };
     
     setTooltipContent(formatTooltip(date, count));
     setTooltipPosition({
-      x: rect.left - containerRect.left + rect.width / 2,
-      y: rect.top - containerRect.top - 8
+      x: rect.left + (rect.width / 2),
+      y: rect.top - 8
     });
     setShowTooltip(true);
   };
@@ -167,8 +168,9 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
               ))}
               {showTooltip && (
                 <div 
-                  className="pointer-events-none fixed z-50 px-2 py-1 text-xs font-medium text-white bg-black/90 rounded-md shadow-lg whitespace-nowrap"
+                  className="pointer-events-none absolute z-50 px-2 py-1 text-xs font-medium text-white bg-black/90 rounded-md shadow-lg whitespace-nowrap"
                   style={{
+                    position: 'fixed',
                     left: `${tooltipPosition.x}px`,
                     top: `${tooltipPosition.y}px`,
                     transform: 'translate(-50%, -100%)',

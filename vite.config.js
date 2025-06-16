@@ -11,19 +11,25 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: {
-        '/api/github-contributions': {
-          target: 'http://localhost:3001',
-          changeOrigin: true
-        },
-        '/api/github-stats': {
-          target: 'https://github-contributions-api.jogruber.de/v4',
+        '/api/github-personal': {
+          target: 'https://api.github.com',
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api\/github-stats/, '')
+          rewrite: (path) => '/graphql'
         },
         '/api/github-corporate': {
           target: graphqlTarget,
           changeOrigin: true,
-          rewrite: (path) => '/graphql'
+          rewrite: (path) => '/graphql',
+          configure: (proxy, options) => {
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              if (req.body) {
+                const bodyData = JSON.stringify(req.body);
+                proxyReq.setHeader('Content-Type', 'application/json');
+                proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+                proxyReq.write(bodyData);
+              }
+            });
+          }
         }
       }
     }

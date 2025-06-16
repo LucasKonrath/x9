@@ -1,33 +1,63 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { contributionsQuery, fetchGraphQL } from '../utils/graphql';
 import CorporateContributionHeatmap from './CorporateContributionHeatmap';
+import { format, parseISO } from 'date-fns';
 
 function GitHubContributionGraph({ username, corporateUser }) {
-  // State to track if the image is loading
   const [isLoading, setIsLoading] = React.useState(true);
-  const [totalCommits, setTotalCommits] = React.useState(0);
-
-  // GitHub contribution graph is loaded from an external service
-  const contributionUrl = `https://ghchart.rshah.org/${username}`;
-
-  // Function to fetch and parse SVG data
-  const fetchTotalCommits = async () => {
-    try {
-      const response = await fetch(`/api/github-stats/${username}`);
-      const data = await response.json();
-      const commits = data.total['2025'] || 0;
-      setTotalCommits(commits);
-    } catch (error) {
-      console.error('Error fetching commit data:', error);
-    }
-  };
+  const [contributions, setContributions] = React.useState(null);
+  const [tooltipContent, setTooltipContent] = useState('');
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [showTooltip, setShowTooltip] = useState(false);
 
   React.useEffect(() => {
-    fetchTotalCommits();
+    const fetchContributions = async () => {
+      try {
+        setIsLoading(true);
+        const now = new Date();
+        const fromDate = new Date(now);
+        fromDate.setFullYear(fromDate.getFullYear() - 1);
+
+        const data = await fetchGraphQL(contributionsQuery, {
+          username,
+          from: fromDate.toISOString(),
+          to: now.toISOString()
+        }, true);
+
+        setContributions(data.data.user.contributionsCollection.contributionCalendar);
+      } catch (error) {
+        console.error('Error fetching contributions:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchContributions();
   }, [username]);
+
+  const getContributionColor = (count) => {
+    if (count === 0) return 'bg-white';
+    if (count <= 3) return 'bg-[#4ade80] opacity-40';
+    if (count <= 6) return 'bg-[#4ade80] opacity-60';
+    if (count <= 9) return 'bg-[#4ade80] opacity-80';
+    return 'bg-[#4ade80]';
+  };
+
+  const handleSquareHover = (event, date, count) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const container = event.currentTarget.closest('.contribution-container');
+    const containerRect = container?.getBoundingClientRect() || { left: 0, top: 0 };
+    
+    setTooltipContent(`${count} contributions on ${format(parseISO(date), 'MMM d, yyyy')}`);
+    setTooltipPosition({
+      x: rect.left - containerRect.left + rect.width / 2,
+      y: rect.top - containerRect.top - 8
+    });
+    setShowTooltip(true);
+  };
 
   return (
     <div>
-      {/* Existing public contribution graph */}
       <div className="mb-6 bg-[#1e293b] border border-[#334155] rounded-lg p-4 shadow-md">
         <div className="flex flex-col">
           <div className="flex justify-between items-center mb-3">
@@ -37,12 +67,14 @@ function GitHubContributionGraph({ username, corporateUser }) {
               </svg>
               Contribution Activity
             </h3>
-            <span className="text-[#4ade80] font-medium">{totalCommits} Commits Last Year</span>
+            <span className="text-[#4ade80] font-medium">
+              {contributions?.totalContributions || 0} Commits Last Year
+            </span>
           </div>
 
           <div className="bg-[#0f172a] rounded border border-[#334155] p-3 overflow-hidden">
             <div className="flex justify-center">
-              {isLoading && (
+              {isLoading ? (
                 <div className="h-32 flex items-center justify-center">
                   <div className="animate-pulse flex space-x-1">
                     <div className="h-3 w-3 bg-[#4ade80] rounded-full"></div>
@@ -50,24 +82,34 @@ function GitHubContributionGraph({ username, corporateUser }) {
                     <div className="h-3 w-3 bg-[#4ade80] rounded-full animation-delay-400"></div>
                   </div>
                 </div>
+              ) : (
+                <div className="flex flex-wrap gap-1 justify-center relative contribution-container">
+                  {contributions?.weeks?.map((week, weekIndex) => (
+                    <div key={weekIndex} className="flex flex-col gap-1">
+                      {week.contributionDays.map((day, dayIndex) => (
+                        <div
+                          key={dayIndex}
+                          className={`w-3 h-3 rounded-sm ${getContributionColor(day.contributionCount)} hover:ring-1 hover:ring-white/50`}
+                          onMouseEnter={(e) => handleSquareHover(e, day.date, day.contributionCount)}
+                          onMouseLeave={() => setShowTooltip(false)}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                  {showTooltip && (
+                    <div 
+                      className="pointer-events-none absolute z-50 px-2 py-1 text-xs font-medium text-white bg-black/90 rounded-md shadow-lg whitespace-nowrap"
+                      style={{
+                        left: `${tooltipPosition.x}px`,
+                        top: `${tooltipPosition.y}px`,
+                        transform: 'translate(-50%, -100%)',
+                      }}
+                    >
+                      {tooltipContent}
+                    </div>
+                  )}
+                </div>
               )}
-              <img 
-                src={contributionUrl} 
-                alt={`${username}'s GitHub contribution graph`} 
-                className={`max-w-full h-auto transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
-                style={{ filter: 'brightness(0.95) hue-rotate(10deg)' }} // Apply slight adjustment to match theme
-                onLoad={() => setIsLoading(false)}
-                onError={(e) => {
-                  setIsLoading(false);
-                  e.target.onerror = null;
-                  e.target.style.display = 'none';
-                  const container = e.target.parentNode;
-                  const errorMsg = document.createElement('p');
-                  errorMsg.textContent = 'Unable to load contribution graph. Check your connection or try again later.';
-                  errorMsg.className = 'text-gray-400 text-sm py-4';
-                  container.appendChild(errorMsg);
-                }}
-              />
             </div>
 
             <div className="mt-2 text-xs text-gray-400 flex justify-between items-center">
@@ -96,8 +138,7 @@ function GitHubContributionGraph({ username, corporateUser }) {
         </div>
       </div>
       
-      {/* Add corporate contribution heatmap */}
-      <CorporateContributionHeatmap corporateUser={corporateUser} />
+      {corporateUser && <CorporateContributionHeatmap corporateUser={corporateUser} />}
     </div>
   );
 }
