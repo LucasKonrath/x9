@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { format, parseISO } from 'date-fns';
 
 interface ContributionDay {
   contributionCount: number;
@@ -18,6 +19,9 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
   const [error, setError] = useState<string | null>(null);
   const [totalContributions, setTotalContributions] = useState(0);
   const [weeks, setWeeks] = useState<ContributionWeek[]>([]);
+  const [tooltipContent, setTooltipContent] = useState('');
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [showTooltip, setShowTooltip] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,12 +86,31 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
     fetchData();
   }, [username]);
 
+  const formatTooltip = (date: string, count: number) => {
+    const formattedDate = format(parseISO(date), 'MMMM d, yyyy');
+    const commitText = count === 1 ? 'commit' : 'commits';
+    return `${count} ${commitText} on ${formattedDate}`;
+  };
+
   const getContributionColor = (count: number) => {
     if (count === 0) return 'bg-white';
     if (count <= 3) return 'bg-[#4ade80] opacity-40';
     if (count <= 6) return 'bg-[#4ade80] opacity-60';
     if (count <= 9) return 'bg-[#4ade80] opacity-80';
     return 'bg-[#4ade80]';
+  };
+
+  const handleSquareHover = (event: React.MouseEvent, date: string, count: number) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const container = event.currentTarget.closest('.contribution-container');
+    const containerRect = container?.getBoundingClientRect() || { left: 0, top: 0 };
+    
+    setTooltipContent(formatTooltip(date, count));
+    setTooltipPosition({
+      x: rect.left - containerRect.left + rect.width / 2,
+      y: rect.top - containerRect.top - 8
+    });
+    setShowTooltip(true);
   };
 
   return (
@@ -116,18 +139,31 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
           ) : error ? (
             <div className="text-gray-400 text-sm py-4 text-center">{error}</div>
           ) : (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1 relative contribution-container justify-center items-center min-h-[200px]">
               {weeks.map((week, weekIndex) => (
                 <div key={weekIndex} className="flex flex-col gap-1">
                   {week.contributionDays.map((day, dayIndex) => (
                     <div
                       key={dayIndex}
-                      className={`w-3 h-3 rounded-sm ${getContributionColor(day.contributionCount)}`}
-                      title={`${day.date}: ${day.contributionCount} contributions`}
+                      className={`w-3 h-3 rounded-sm ${getContributionColor(day.contributionCount)} hover:ring-1 hover:ring-white/50`}
+                      onMouseEnter={(e) => handleSquareHover(e, day.date, day.contributionCount)}
+                      onMouseLeave={() => setShowTooltip(false)}
                     />
                   ))}
                 </div>
               ))}
+              {showTooltip && (
+                <div 
+                  className="pointer-events-none fixed z-50 px-2 py-1 text-xs font-medium text-white bg-black/90 rounded-md shadow-lg whitespace-nowrap"
+                  style={{
+                    left: `${tooltipPosition.x}px`,
+                    top: `${tooltipPosition.y}px`,
+                    transform: 'translate(-50%, -100%)',
+                  }}
+                >
+                  {tooltipContent}
+                </div>
+              )}
             </div>
           )}
         </div>
