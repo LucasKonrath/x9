@@ -11,10 +11,10 @@ interface ContributionWeek {
 }
 
 interface CorporateContributionHeatmapProps {
-  username: string;
+  corporateUser: string;
 }
 
-const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> = ({ username }) => {
+const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> = ({ corporateUser }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalContributions, setTotalContributions] = useState(0);
@@ -28,6 +28,13 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
       try {
         setError(null);
         setIsLoading(true);
+        const now = new Date();
+        const fromDate = new Date();
+        fromDate.setDate(now.getDate() - 365); // Fetch data for the last 365 days
+        const fromIso = fromDate.toISOString();
+        const tomorrow = new Date();
+        tomorrow.setDate(now.getDate() + 1); // Include today
+        const toIso = tomorrow.toISOString();
 
         const response = await fetch('/api/github-corporate', {
           method: 'POST',
@@ -38,9 +45,9 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
             'X-Github-Next-Global-ID': '1'
           },
           body: JSON.stringify({
-            query: `query($username: String!) {
+            query: `query($username: String!, $from: DateTime!, $to: DateTime!) {
               user(login: $username) {
-                contributionsCollection {
+                contributionsCollection(from: $from, to: $to) {
                   contributionCalendar {
                     totalContributions
                     weeks {
@@ -53,7 +60,7 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
                 }
               }
             }`,
-            variables: { username }
+            variables: { username: corporateUser, from: fromIso, to: toIso }
           })
         });
 
@@ -66,6 +73,7 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
         }
 
         const data = await response.json();
+        console.log('Corporate contributions data:', data);
         if (!data.data?.user?.contributionsCollection?.contributionCalendar) {
           throw new Error('Invalid response format');
         }
@@ -84,7 +92,12 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
     };
 
     fetchData();
-  }, [username]);
+  }, [corporateUser]);
+
+  const total2025Contributions = weeks.reduce((sum, week) => 
+    sum + week.contributionDays.reduce((wSum, day) => 
+      wSum + (day.date.startsWith('2025') ? day.contributionCount : 0), 0), 0);
+  
 
   const formatTooltip = (date: string, count: number) => {
     const formattedDate = format(parseISO(date), 'MMMM d, yyyy');
@@ -121,7 +134,7 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
             Corporate Contribution Activity
           </h3>
           <span className="text-[#4ade80] font-medium">
-            {totalContributions} Corporate Commits in 2025
+            {total2025Contributions} Corporate Commits in 2025
           </span>
         </div>
       </div>

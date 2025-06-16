@@ -18,6 +18,23 @@ const GITHUB_USERS = [
   'joaoguilhermedesa'
 ];
 
+const CORPORATE_USERS = [
+  'LucasKonrath',
+  'xmacedo',
+  'marcelobnbck',
+  'lee22br',
+  'vfurinii',
+  'icarocaetano',
+  'andeerlb',
+  'karane',
+  'joaoguilhermedesa'
+];
+
+const getCorporateUser = (githubUser) => {
+  const idx = GITHUB_USERS.indexOf(githubUser);
+  return idx !== -1 ? CORPORATE_USERS[idx] : null;
+}
+
 function App() {
   const [selectedUser, setSelectedUser] = useState(GITHUB_USERS[0]);
   const [events, setEvents] = useState([]);
@@ -190,7 +207,8 @@ function App() {
 
         {!loading && !error && (
           <>
-            <GitHubContributionGraph username={selectedUser} />
+            <GitHubContributionGraph username={selectedUser}
+            corporateUser={ getCorporateUser(selectedUser) } />
             <CommitTimeline events={events} />
             <MarkdownPosts
               posts={markdownPosts}

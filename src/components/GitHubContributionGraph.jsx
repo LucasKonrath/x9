@@ -1,7 +1,7 @@
 import React from 'react';
 import CorporateContributionHeatmap from './CorporateContributionHeatmap';
 
-function GitHubContributionGraph({ username }) {
+function GitHubContributionGraph({ username, corporateUser }) {
   // State to track if the image is loading
   const [isLoading, setIsLoading] = React.useState(true);
   const [totalCommits, setTotalCommits] = React.useState(0);
@@ -97,7 +97,7 @@ function GitHubContributionGraph({ username }) {
       </div>
       
       {/* Add corporate contribution heatmap */}
-      <CorporateContributionHeatmap username={username} />
+      <CorporateContributionHeatmap corporateUser={corporateUser} />
     </div>
   );
 }
