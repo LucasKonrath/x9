@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import CommitTimeline from './components/CommitTimeline';
 import UserSelector from './components/UserSelector';
@@ -161,66 +160,57 @@ function App() {
   }, [selectedUser]);
 
   return (
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <header className="mb-8 flex items-center">
-          <img src="/x9.png" alt="X9 Logo" className="h-16 mr-4" />
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">X9</h1>
-            <p className="text-gray-400">Track GitHub activity of your team</p>
+    <div className="min-h-screen bg-github-dark">
+      <header className="bg-github-header border-b border-github-border">
+        <div className="container mx-auto px-4 h-16 flex items-center">
+          <img src="/x9.png" alt="X9 Logo" className="h-8 mr-4" />
+          <div className="flex-1">
+            <h1 className="text-xl font-semibold text-github-text">X9 Team Dashboard</h1>
           </div>
-        </header>
-
-        <UserSelector
+          <UserSelector
             users={GITHUB_USERS}
             selectedUser={selectedUser}
             onSelectUser={setSelectedUser}
-        />
+          />
+        </div>
+      </header>
 
+      <main className="container mx-auto px-4 py-8 max-w-6xl space-y-6">
         {loading && (
-            <div className="flex justify-center my-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#22c55e]"></div>
-            </div>
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-github-green border-t-transparent"></div>
+          </div>
         )}
 
         {error && (
-            <div className="bg-red-900 border border-red-800 text-red-200 px-4 py-3 rounded my-4" role="alert">
-              <p>{error}</p>
-            </div>
+          <div className="bg-[#ff000010] border border-[#ff000020] text-red-400 px-4 py-3 rounded-md" role="alert">
+            <p>{error}</p>
+          </div>
         )}
 
         {!loading && !error && (
-            <>
-              <GitHubContributionGraph username={selectedUser} />
-              <CommitTimeline events={events} />
-              <MarkdownPosts
-                  posts={markdownPosts}
-                  onEdit={handleEditPost}
+          <>
+            <GitHubContributionGraph username={selectedUser} />
+            <CommitTimeline events={events} />
+            <MarkdownPosts
+              posts={markdownPosts}
+              onEdit={handleEditPost}
+            />
+            
+            <div className="mt-8 flex justify-end">
+              <MarkdownEditor
+                key={editingPost ? `edit-${editingPost.title}` : 'create-new'}
+                username={selectedUser}
+                onSave={saveMarkdownPost}
+                editingPost={editingPost}
+                onCancelEdit={handleCancelEdit}
+                forceOpen={editorVisible}
               />
-              <div className="mt-8 flex justify-end">
-                <MarkdownEditor
-                    key={editingPost ? `edit-${editingPost.title}` : 'create-new'}
-                    username={selectedUser}
-                    onSave={saveMarkdownPost}
-                    editingPost={editingPost}
-                    onCancelEdit={handleCancelEdit}
-                    forceOpen={editorVisible}
-                />
-              </div>
-
-              {saveStatus.success && (
-                  <div className="mt-4 bg-[#15803d] text-white px-4 py-2 rounded-md animate-pulse">
-                    Notes {editingPost ? 'updated' : 'saved'} successfully!
-                  </div>
-              )}
-
-              {saveStatus.error && (
-                  <div className="mt-4 bg-red-900 border border-red-800 text-red-200 px-4 py-3 rounded">
-                    Error: {saveStatus.error}
-                  </div>
-              )}
-            </>
+            </div>
+          </>
         )}
-      </div>
+      </main>
+    </div>
   );
 }
 
