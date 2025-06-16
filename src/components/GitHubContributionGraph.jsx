@@ -55,6 +55,10 @@ function GitHubContributionGraph({ username, corporateUser }) {
     setShowTooltip(true);
   };
 
+  const total2025Contributions = contributions?.weeks?.reduce((sum, week) => 
+    sum + week.contributionDays.reduce((wSum, day) => 
+      wSum + (day.date.startsWith('2025') ? day.contributionCount : 0), 0), 0) || 0;
+
   return (
     <div>
       <div className="mb-6 bg-[#1e293b] border border-[#334155] rounded-lg overflow-hidden">
@@ -67,7 +71,7 @@ function GitHubContributionGraph({ username, corporateUser }) {
               Contribution Activity
             </h3>
             <span className="text-[#4ade80] font-medium">
-              {contributions?.totalContributions || 0} Commits Last Year
+              {total2025Contributions} Commits in 2025
             </span>
           </div>
         </div>
