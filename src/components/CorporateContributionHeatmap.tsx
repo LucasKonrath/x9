@@ -127,8 +127,15 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
     setShowTooltip(true);
   };
 
+  const getCorporateProfileUrl = (username: string) => {
+    const org = import.meta.env.VITE_ORG;
+    return org 
+      ? `https://github.${org}.com/${username}`
+      : `https://github.com/${username}`;
+  };
+
   return (
-    <div className="bg-[#1e293b] shadow rounded-lg overflow-hidden border border-[#334155] mt-4">
+    <div className="bg-[#1e293b] border border-[#334155] rounded-lg overflow-hidden mt-4">
       <div className="px-6 py-4 border-b border-[#334155]">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold text-white flex items-center">
@@ -153,34 +160,47 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
           ) : error ? (
             <div className="text-gray-400 text-sm py-4 text-center">{error}</div>
           ) : (
-            <div className="flex flex-wrap gap-1 relative contribution-container justify-center items-center min-h-[200px]">
-              {weeks.map((week, weekIndex) => (
-                <div key={weekIndex} className="flex flex-col gap-1">
-                  {week.contributionDays.map((day, dayIndex) => (
-                    <div
-                      key={dayIndex}
-                      className={`w-3 h-3 rounded-sm ${getContributionColor(day.contributionCount)} hover:ring-1 hover:ring-white/50`}
-                      onMouseEnter={(e) => handleSquareHover(e, day.date, day.contributionCount)}
-                      onMouseLeave={() => setShowTooltip(false)}
-                    />
-                  ))}
-                </div>
-              ))}
-              {showTooltip && (
-                <div 
-                  className="pointer-events-none absolute z-50 px-2 py-1 text-xs font-medium text-white bg-black/90 rounded-md shadow-lg whitespace-nowrap"
-                  style={{
-                    position: 'fixed',
-                    left: `${tooltipPosition.x}px`,
-                    top: `${tooltipPosition.y}px`,
-                    transform: 'translate(-50%, -100%)',
-                  }}
-                >
-                  {tooltipContent}
-                </div>
-              )}
+            <div className="flex justify-center min-h-[200px] items-center">
+              <div className="flex flex-wrap gap-1 contribution-container">
+                {weeks.map((week, weekIndex) => (
+                  <div key={weekIndex} className="flex flex-col gap-1">
+                    {week.contributionDays.map((day, dayIndex) => (
+                      <div
+                        key={dayIndex}
+                        className={`w-3 h-3 rounded-sm ${getContributionColor(day.contributionCount)} hover:ring-1 hover:ring-white/50`}
+                        onMouseEnter={(e) => handleSquareHover(e, day.date, day.contributionCount)}
+                        onMouseLeave={() => setShowTooltip(false)}
+                      />
+                    ))}
+                  </div>
+                ))}
+                {showTooltip && (
+                  <div 
+                    className="pointer-events-none absolute z-50 px-2 py-1 text-xs font-medium text-white bg-black/90 rounded-md shadow-lg whitespace-nowrap"
+                    style={{
+                      position: 'fixed',
+                      left: `${tooltipPosition.x}px`,
+                      top: `${tooltipPosition.y}px`,
+                      transform: 'translate(-50%, -100%)',
+                    }}
+                  >
+                    {tooltipContent}
+                  </div>
+                )}
+              </div>
             </div>
           )}
+          {/* Add this inside the bg-[#0f172a] div, after the contribution grid */}
+          <div className="mt-3 text-center">
+            <a 
+              href={getCorporateProfileUrl(corporateUser)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-[#4ade80] hover:text-[#86efac] hover:underline transition-colors"
+            >
+              View full profile on GitHub Enterprise
+            </a>
+          </div>
         </div>
       </div>
     </div>

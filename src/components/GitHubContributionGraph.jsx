@@ -58,8 +58,8 @@ function GitHubContributionGraph({ username, corporateUser }) {
 
   return (
     <div>
-      <div className="mb-6 bg-[#1e293b] border border-[#334155] rounded-lg p-4 shadow-md">
-        <div className="flex flex-col">
+      <div className="mb-6 bg-[#1e293b] border border-[#334155] rounded-lg overflow-hidden">
+        <div className="px-6 py-4 border-b border-[#334155]">
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-lg font-semibold text-white flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#4ade80]" viewBox="0 0 20 20" fill="currentColor">
@@ -71,9 +71,11 @@ function GitHubContributionGraph({ username, corporateUser }) {
               {contributions?.totalContributions || 0} Commits Last Year
             </span>
           </div>
+        </div>
 
-          <div className="bg-[#0f172a] rounded border border-[#334155] p-3 overflow-hidden">
-            <div className="flex justify-center">
+        <div className="p-6">
+          <div className="bg-[#0f172a] rounded border border-[#334155] p-3">
+            <div className="flex justify-center min-h-[200px] items-center">
               {isLoading ? (
                 <div className="h-32 flex items-center justify-center">
                   <div className="animate-pulse flex space-x-1">
@@ -83,7 +85,7 @@ function GitHubContributionGraph({ username, corporateUser }) {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-wrap gap-1 justify-center relative contribution-container">
+                <div className="flex flex-wrap gap-1 contribution-container">
                   {contributions?.weeks?.map((week, weekIndex) => (
                     <div key={weekIndex} className="flex flex-col gap-1">
                       {week.contributionDays.map((day, dayIndex) => (
@@ -112,18 +114,7 @@ function GitHubContributionGraph({ username, corporateUser }) {
               )}
             </div>
 
-            <div className="mt-2 text-xs text-gray-400 flex justify-between items-center">
-              <span>Less</span>
-              <div className="flex space-x-1">
-                <span className="inline-block w-3 h-3 bg-[#0e4429] rounded-sm opacity-20"></span>
-                <span className="inline-block w-3 h-3 bg-[#0e4429] rounded-sm opacity-40"></span>
-                <span className="inline-block w-3 h-3 bg-[#0e4429] rounded-sm opacity-60"></span>
-                <span className="inline-block w-3 h-3 bg-[#0e4429] rounded-sm opacity-80"></span>
-                <span className="inline-block w-3 h-3 bg-[#0e4429] rounded-sm"></span>
-              </div>
-              <span>More</span>
-            </div>
-
+            {/* Remove legend section and keep only the profile link */}
             <div className="mt-3 text-center">
               <a 
                 href={`https://github.com/${username}`} 
