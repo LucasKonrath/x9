@@ -45,13 +45,11 @@ function GitHubContributionGraph({ username, corporateUser }) {
 
   const handleSquareHover = (event, date, count) => {
     const rect = event.currentTarget.getBoundingClientRect();
-    const container = event.currentTarget.closest('.contribution-container');
-    const containerRect = container?.getBoundingClientRect() || { left: 0, top: 0 };
     
     setTooltipContent(`${count} contributions on ${format(parseISO(date), 'MMM d, yyyy')}`);
     setTooltipPosition({
-      x: rect.left - containerRect.left + rect.width / 2,
-      y: rect.top - containerRect.top - 8
+      x: rect.left + (rect.width / 2),
+      y: rect.top - 8
     });
     setShowTooltip(true);
   };
@@ -102,6 +100,7 @@ function GitHubContributionGraph({ username, corporateUser }) {
                     <div 
                       className="pointer-events-none absolute z-50 px-2 py-1 text-xs font-medium text-white bg-black/90 rounded-md shadow-lg whitespace-nowrap"
                       style={{
+                        position: 'fixed',
                         left: `${tooltipPosition.x}px`,
                         top: `${tooltipPosition.y}px`,
                         transform: 'translate(-50%, -100%)',
