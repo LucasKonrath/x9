@@ -37,17 +37,14 @@ function TeamReport({ users, corporateUsers, onClose }) {
       
       const imgData = canvas.toDataURL('image/png');
       
-      // Calculate PDF dimensions
+      // Calculate dimensions for a single continuous page
       const imgWidth = 210; // A4 width in mm
-      const pageHeight = 280; // A4 height in mm (leaving space for header)
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
       
-      // Create PDF
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      let position = 20;
+      // Create PDF with custom page size to fit all content
+      const pdf = new jsPDF('p', 'mm', [210, imgHeight + 50]); // Add 50mm for header
       
-      // Add header to first page
+      // Add header
       pdf.setFontSize(18);
       pdf.setFont(undefined, 'bold');
       pdf.text('Team Activity Report', 20, 15);
@@ -69,17 +66,8 @@ function TeamReport({ users, corporateUsers, onClose }) {
       pdf.setLineWidth(0.5);
       pdf.line(20, 40, 190, 40);
       
-      // Add the main content
+      // Add the entire content as one image on the custom-sized page
       pdf.addImage(imgData, 'PNG', 0, 45, imgWidth, imgHeight);
-      heightLeft -= (pageHeight - 45);
-      
-      // Add additional pages if needed
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight + 15;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
       
       // Save the PDF
       const fileName = `team-activity-report-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`;
