@@ -1,15 +1,97 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { contributionsQuery, fetchGraphQL } from '../utils/graphql';
 import { fetchMarkdownPosts } from '../services/githubService';
 import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import CorporateContributionHeatmap from './CorporateContributionHeatmap';
 import GitHubContributionGraph from './GitHubContributionGraph';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 function TeamReport({ users, corporateUsers, onClose }) {
   const [isLoading, setIsLoading] = useState(true);
   const [teamData, setTeamData] = useState([]);
   const [error, setError] = useState(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const reportRef = useRef(null);
+
+  const generatePDF = async () => {
+    if (!reportRef.current) return;
+    
+    try {
+      setIsGeneratingPDF(true);
+      
+      // Create a clone of the report for PDF generation
+      const reportElement = reportRef.current;
+      
+      // Configure html2canvas options for better quality
+      const canvas = await html2canvas(reportElement, {
+        scale: 1.5, // Good balance between quality and file size
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#0f172a',
+        width: reportElement.scrollWidth,
+        height: reportElement.scrollHeight,
+        logging: false, // Disable console logs
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Calculate PDF dimensions
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 280; // A4 height in mm (leaving space for header)
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      
+      // Create PDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let position = 20;
+      
+      // Add header to first page
+      pdf.setFontSize(18);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Team Activity Report', 20, 15);
+      
+      pdf.setFontSize(10);
+      pdf.setFont(undefined, 'normal');
+      pdf.text(`Generated on: ${format(new Date(), 'MMMM d, yyyy')}`, 150, 15);
+      
+      // Add summary stats
+      const totalPersonalCommits = teamData.reduce((sum, user) => sum + user.personal2025Contributions, 0);
+      const totalCorporateCommits = teamData.reduce((sum, user) => sum + user.corporate2025Contributions, 0);
+      
+      pdf.setFontSize(12);
+      pdf.text(`Team Members: ${teamData.length}`, 20, 25);
+      pdf.text(`Total Personal Commits (2025): ${totalPersonalCommits}`, 20, 30);
+      pdf.text(`Total Corporate Commits (2025): ${totalCorporateCommits}`, 20, 35);
+      
+      // Add separator line
+      pdf.setLineWidth(0.5);
+      pdf.line(20, 40, 190, 40);
+      
+      // Add the main content
+      pdf.addImage(imgData, 'PNG', 0, 45, imgWidth, imgHeight);
+      heightLeft -= (pageHeight - 45);
+      
+      // Add additional pages if needed
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight + 15;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      // Save the PDF
+      const fileName = `team-activity-report-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`;
+      pdf.save(fileName);
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
 
   useEffect(() => {
     const fetchTeamData = async () => {
@@ -95,15 +177,39 @@ function TeamReport({ users, corporateUsers, onClose }) {
       <div className="bg-[#1e293b] border border-[#334155] rounded-lg p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-white">Team Activity Report</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white"
-            aria-label="Close"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={generatePDF}
+              disabled={isGeneratingPDF || isLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-[#4ade80] text-black rounded hover:bg-[#86efac] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isGeneratingPDF ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Generating PDF...
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Download PDF
+                </>
+              )}
+            </button>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white"
+              aria-label="Close"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -115,7 +221,14 @@ function TeamReport({ users, corporateUsers, onClose }) {
             </div>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div ref={reportRef} className="space-y-8"
+            style={{ 
+              // Ensure proper styling for PDF generation
+              backgroundColor: '#0f172a',
+              padding: '16px',
+              borderRadius: '8px'
+            }}
+          >
             {teamData.map((userData) => (
               <div
                 key={userData.username}
