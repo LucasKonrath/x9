@@ -15,6 +15,35 @@ interface CorporateContributionHeatmapProps {
   minimal?: boolean;
 }
 
+// Helper function to calculate contribution trend
+const calculateTrend = (weeks: ContributionWeek[]) => {
+  if (!weeks || weeks.length < 8) return { trend: 'neutral', percentage: 0 };
+  
+  // Get contributions for the last 4 weeks and previous 4 weeks
+  const recentWeeks = weeks.slice(-4);
+  const previousWeeks = weeks.slice(-8, -4);
+  
+  const recentTotal = recentWeeks.reduce((sum, week) => 
+    sum + week.contributionDays.reduce((daySum, day) => daySum + day.contributionCount, 0), 0);
+  
+  const previousTotal = previousWeeks.reduce((sum, week) => 
+    sum + week.contributionDays.reduce((daySum, day) => daySum + day.contributionCount, 0), 0);
+  
+  if (previousTotal === 0 && recentTotal === 0) return { trend: 'neutral', percentage: 0 };
+  if (previousTotal === 0) return { trend: 'up', percentage: 100 };
+  
+  const changePercentage = ((recentTotal - previousTotal) / previousTotal) * 100;
+  
+  console.log('Corporate Trend Debug:', { recentTotal, previousTotal, weeksLength: weeks.length, changePercentage });
+  
+  if (Math.abs(changePercentage) < 10) return { trend: 'neutral', percentage: Math.round(changePercentage) };
+  
+  return {
+    trend: changePercentage > 0 ? 'up' : 'down',
+    percentage: Math.round(Math.abs(changePercentage))
+  };
+};
+
 const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> = ({ 
   corporateUser,
   minimal = false 
@@ -105,6 +134,7 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
     sum + week.contributionDays.reduce((wSum, day) => 
       wSum + (day.date.startsWith('2025') ? day.contributionCount : 0), 0), 0);
   
+  const trendData = calculateTrend(weeks);
 
   const formatTooltip = (date: string, count: number) => {
     const localDate = new Date(date);
@@ -139,6 +169,9 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
       : `https://github.com/${username}`;
   };
 
+  // Calculate contribution trend
+  const { trend, percentage } = calculateTrend(weeks);
+
   return (
     <div className={`bg-[#1e293b] border border-[#334155] rounded-lg overflow-hidden ${minimal ? 'text-sm' : 'mt-4'}`}>
       <div className="px-4 py-3 border-b border-[#334155]">
@@ -146,9 +179,30 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
           <h3 className="text-white font-semibold flex items-center">
             {minimal ? 'Corporate Activity' : 'Corporate Contribution Activity'}
           </h3>
-          <span className="text-[#4ade80] font-medium">
-            {total2025Contributions} Corporate Commits in 2025
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-[#4ade80] font-medium">
+              {total2025Contributions} Corporate Commits in 2025
+            </span>
+            {trendData.trend !== 'neutral' && (
+              <div 
+                className="flex items-center gap-1 cursor-help"
+                title={`Activity is ${trendData.percentage}% ${trendData.trend === 'up' ? 'higher' : 'lower'} compared to the previous 4 weeks (comparing last 4 weeks vs weeks 5-8)`}
+              >
+                {trendData.trend === 'up' ? (
+                  <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                  </svg>
+                )}
+                <span className={`text-xs font-medium ${trendData.trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                  {trendData.percentage}% {trendData.trend === 'up' ? 'up' : 'down'}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -195,6 +249,25 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
               </div>
             </div>
           )}
+          
+          {/* Trend analysis section */}
+          {!minimal && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-white font-medium">Contribution Trend (last 4 weeks vs 5-8 weeks ago)</span>
+                <span className={`font-semibold ${trendData.trend === 'up' ? 'text-green-400' : trendData.trend === 'down' ? 'text-red-400' : 'text-gray-400'}`}>
+                  {trendData.trend === 'up' && '↑'}{trendData.trend === 'down' && '↓'} {trendData.percentage}%
+                </span>
+              </div>
+              <div className="mt-2 h-1.5 rounded-full bg-[#334155]">
+                <div 
+                  className={`h-1.5 rounded-full ${trendData.trend === 'up' ? 'bg-green-500' : trendData.trend === 'down' ? 'bg-red-500' : 'bg-gray-500'}`}
+                  style={{ width: `${Math.min(Math.abs(trendData.percentage), 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+          
           {/* Add this inside the bg-[#0f172a] div, after the contribution grid */}
           {!minimal && (
             <div className="mt-3 text-center">
