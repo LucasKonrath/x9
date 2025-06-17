@@ -24,18 +24,19 @@ function TeamReport({ users, corporateUsers, onClose }) {
       // Create a clone of the report for PDF generation
       const reportElement = reportRef.current;
       
-      // Configure html2canvas options for better quality
+      // Configure html2canvas options for smaller file size
       const canvas = await html2canvas(reportElement, {
-        scale: 1.5, // Good balance between quality and file size
+        scale: 0.8, // Reduced scale for smaller file size
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#0f172a',
         width: reportElement.scrollWidth,
         height: reportElement.scrollHeight,
         logging: false, // Disable console logs
+        quality: 0.7, // Reduce image quality
       });
       
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 0.7); // Use JPEG with 70% quality
       
       // Calculate dimensions for a single continuous page
       const imgWidth = 210; // A4 width in mm
@@ -247,14 +248,14 @@ function TeamReport({ users, corporateUsers, onClose }) {
                     <p className="text-sm text-gray-400 mb-2">Personal Contributions</p>
                     <GitHubContributionGraph 
                       username={userData.username} 
-                      minimal={true} 
+                      minimal={false} 
                     />
                   </div>
                   <div className="w-full">
                     <p className="text-sm text-gray-400 mb-2">Corporate Contributions</p>
                     <CorporateContributionHeatmap 
                       corporateUser={userData.corporateUser}
-                      minimal={true} 
+                      minimal={false} 
                     />
                   </div>
                 </div>
