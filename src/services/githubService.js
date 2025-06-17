@@ -15,6 +15,41 @@ export const fetchUserEvents = async (username) => {
   }
 };
 
+/**
+ * Fetches organizational GitHub events
+ * @param {string} username - GitHub username
+ * @returns {Promise<Array>} - Array of organizational events
+ */
+export const fetchOrganizationalEvents = async (username) => {
+  try {
+    const orgDomain = import.meta.env.VITE_ORG;
+    if (!orgDomain) {
+      throw new Error('VITE_ORG environment variable not set');
+    }
+
+    const token = import.meta.env.VITE_GITHUB_TOKEN;
+    if (!token) {
+      throw new Error('VITE_GITHUB_TOKEN environment variable not set');
+    }
+
+    const response = await axios.get(`https://github.${orgDomain}.com/api/v3/events`, {
+      headers: {
+        'Authorization': `bearer ${token}`
+      }
+    });
+
+    // Filter events by the specific user
+    const userEvents = response.data.filter(event => 
+      event.actor && event.actor.login === username
+    );
+
+    return userEvents;
+  } catch (error) {
+    console.error(`Error fetching organizational events for user ${username}:`, error);
+    throw new Error(error.response?.data?.message || 'Failed to fetch organizational events');
+  }
+};
+
 import { getKnownFilesForUser, getApiBaseUrl } from '../utils/fileUtils';
 
 /**

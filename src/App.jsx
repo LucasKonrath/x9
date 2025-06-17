@@ -5,7 +5,7 @@ import MarkdownPosts from './components/MarkdownPosts';
 import MarkdownEditor from './components/MarkdownEditor';
 import GitHubContributionGraph from './components/GitHubContributionGraph';
 import TeamReport from './components/TeamReport';
-import { fetchUserEvents, fetchMarkdownPosts } from './services/githubService';
+import { fetchUserEvents, fetchOrganizationalEvents, fetchMarkdownPosts } from './services/githubService';
 
 const GITHUB_USERS = [
   'LucasKonrath',
@@ -39,13 +39,20 @@ const getCorporateUser = (githubUser) => {
 function App() {
   const [selectedUser, setSelectedUser] = useState(GITHUB_USERS[0]);
   const [events, setEvents] = useState([]);
+  const [organizationalEvents, setOrganizationalEvents] = useState([]);
+  const [activeTab, setActiveTab] = useState('personal'); // 'personal' or 'organizational'
   const [markdownPosts, setMarkdownPosts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [orgLoading, setOrgLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [orgError, setOrgError] = useState(null);
   const [saveStatus, setSaveStatus] = useState({ saving: false, error: null, success: false });
   const [editingPost, setEditingPost] = useState(null);
   const [editorVisible, setEditorVisible] = useState(false);
   const [showTeamReport, setShowTeamReport] = useState(false);
+
+  // Check if organizational features should be enabled
+  const hasOrgConfig = Boolean(import.meta.env.VITE_ORG);
 
   // Function to save markdown post
   const saveMarkdownPost = async (username, fileName, content) => {
@@ -173,10 +180,30 @@ function App() {
       }
     };
 
+    const loadOrganizationalData = async () => {
+      if (!hasOrgConfig) return;
+      
+      setOrgLoading(true);
+      setOrgError(null);
+      try {
+        console.log('Loading organizational data for user:', selectedUser);
+        const orgEvents = await fetchOrganizationalEvents(selectedUser);
+        setOrganizationalEvents(orgEvents);
+        console.log('Organizational events loaded:', orgEvents.length);
+      } catch (err) {
+        setOrgError('Failed to load organizational data. ' + err.message);
+        setOrganizationalEvents([]);
+      } finally {
+        setOrgLoading(false);
+      }
+    };
+
     loadUserData();
+    loadOrganizationalData();
+
     // Reset editing state when user changes
     setEditingPost(null);
-  }, [selectedUser]);
+  }, [selectedUser, hasOrgConfig]);
 
   return (
     <div className="min-h-screen bg-github-dark">
@@ -219,7 +246,66 @@ function App() {
           <>
             <GitHubContributionGraph username={selectedUser}
             corporateUser={ getCorporateUser(selectedUser) } />
-            <CommitTimeline events={events} />
+            
+            {/* Tab Navigation */}
+            <div className="bg-[#1e293b] border border-[#334155] rounded-lg overflow-hidden">
+              <div className="flex border-b border-[#334155]">
+                <button
+                  onClick={() => setActiveTab('personal')}
+                  className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+                    activeTab === 'personal'
+                      ? 'bg-[#4ade80] text-black'
+                      : 'text-gray-300 hover:text-white hover:bg-[#334155]'
+                  }`}
+                >
+                  Personal Commits
+                </button>
+                {hasOrgConfig && (
+                  <button
+                    onClick={() => setActiveTab('organizational')}
+                    className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+                      activeTab === 'organizational'
+                        ? 'bg-[#4ade80] text-black'
+                        : 'text-gray-300 hover:text-white hover:bg-[#334155]'
+                    }`}
+                  >
+                    Organizational Commits
+                  </button>
+                )}
+              </div>
+              
+              {/* Tab Content */}
+              <div className="p-6">
+                {activeTab === 'personal' && (
+                  <div>
+                    {loading ? (
+                      <div className="flex justify-center py-8">
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-[#4ade80] border-t-transparent"></div>
+                      </div>
+                    ) : (
+                      <CommitTimeline events={events} />
+                    )}
+                  </div>
+                )}
+                
+                {activeTab === 'organizational' && hasOrgConfig && (
+                  <div>
+                    {orgLoading ? (
+                      <div className="flex justify-center py-8">
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-[#4ade80] border-t-transparent"></div>
+                      </div>
+                    ) : orgError ? (
+                      <div className="bg-[#ff000010] border border-[#ff000020] text-red-400 px-4 py-3 rounded-md" role="alert">
+                        <p>{orgError}</p>
+                      </div>
+                    ) : (
+                      <CommitTimeline events={organizationalEvents} />
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            
             <MarkdownPosts
               posts={markdownPosts}
               onEdit={handleEditPost}
