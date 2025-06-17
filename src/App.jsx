@@ -4,6 +4,7 @@ import UserSelector from './components/UserSelector';
 import MarkdownPosts from './components/MarkdownPosts';
 import MarkdownEditor from './components/MarkdownEditor';
 import GitHubContributionGraph from './components/GitHubContributionGraph';
+import GitHubAnalytics from './components/GitHubAnalytics';
 import TeamReport from './components/TeamReport';
 import { fetchUserEvents, fetchMarkdownPosts } from './services/githubService';
 
@@ -277,6 +278,9 @@ function App() {
             
             {/* Personal Commits Timeline */}
             <CommitTimeline events={events} isOrganizational={false} />
+            
+            {/* GitHub Analytics */}
+            <GitHubAnalytics username={selectedUser} />
             
             <MarkdownPosts
               posts={markdownPosts}
