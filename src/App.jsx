@@ -54,6 +54,34 @@ function App() {
   // Check if organizational features should be enabled
   const hasOrgConfig = Boolean(import.meta.env.VITE_ORG);
 
+  // Function to get repositories worked on in the last week
+  const getReposWorkedThisWeek = () => {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    // Filter events from the last week
+    const recentEvents = events.filter(event => {
+      const eventDate = new Date(event.created_at);
+      return eventDate >= oneWeekAgo && 
+             event.type === 'PushEvent' && 
+             event.payload && 
+             event.payload.commits && 
+             event.payload.commits.length > 0;
+    });
+
+    // Get unique repositories
+    const reposSet = new Set();
+    recentEvents.forEach(event => {
+      if (event.repo && event.repo.name) {
+        reposSet.add(event.repo.name);
+      }
+    });
+
+    return Array.from(reposSet).sort();
+  };
+
+  const reposThisWeek = getReposWorkedThisWeek();
+
   // Function to save markdown post
   const saveMarkdownPost = async (username, fileName, content) => {
     try {
@@ -251,6 +279,34 @@ function App() {
           <>
             <GitHubContributionGraph username={selectedUser}
             corporateUser={ getCorporateUser(selectedUser) } />
+            
+            {/* POCs worked this week section */}
+            {reposThisWeek.length > 0 && (
+              <div className="bg-[#1e293b] border border-[#334155] rounded-lg p-6">
+                <div className="flex items-center mb-4">
+                  <svg className="w-5 h-5 text-[#4ade80] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  <h3 className="text-lg font-semibold text-white">POCs worked this week</h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {reposThisWeek.map(repoName => (
+                    <a
+                      key={repoName}
+                      href={`https://github.com/${repoName}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-3 py-1.5 bg-[#0f172a] border border-[#334155] rounded-md text-sm text-[#4ade80] hover:text-[#86efac] hover:border-[#22c55e] transition-colors duration-200"
+                    >
+                      <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                      {repoName.split('/')[1] || repoName}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {/* Tab Navigation */}
             <div className="bg-[#1e293b] border border-[#334155] rounded-lg overflow-hidden">
