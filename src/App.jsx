@@ -7,29 +7,27 @@ import GitHubContributionGraph from './components/GitHubContributionGraph';
 import TeamReport from './components/TeamReport';
 import { fetchUserEvents, fetchOrganizationalEvents, fetchMarkdownPosts } from './services/githubService';
 
-const GITHUB_USERS = [
-  'LucasKonrath',
-  'xmacedo',
-  'marcelobnbck',
-  'lee22br',
-  'vfurinii',
-  'icarocaetano',
-  'andeerlb',
-  'karane',
-  'joaoguilhermedesa'
-];
+// Get user arrays from environment variables
+const getGitHubUsers = () => {
+  const usersString = import.meta.env.VITE_GITHUB_USERS;
+  if (!usersString) {
+    console.warn('VITE_GITHUB_USERS not found in environment variables, using fallback');
+    return ['LucasKonrath', 'xmacedo', 'marcelobnbck', 'lee22br', 'vfurinii', 'icarocaetano', 'andeerlb', 'karane', 'joaoguilhermedesa'];
+  }
+  return usersString.split(',').map(user => user.trim()).filter(user => user.length > 0);
+};
 
-const CORPORATE_USERS = [
-  'LucasKonrath',
-  'xmacedo',
-  'marcelobnbck',
-  'lee22br',
-  'vfurinii',
-  'icarocaetano',
-  'andeerlb',
-  'karane',
-  'joaoguilhermedesa'
-];
+const getCorporateUsers = () => {
+  const usersString = import.meta.env.VITE_CORPORATE_USERS;
+  if (!usersString) {
+    console.warn('VITE_CORPORATE_USERS not found in environment variables, using fallback');
+    return ['LucasKonrath', 'xmacedo', 'marcelobnbck', 'lee22br', 'vfurinii', 'icarocaetano', 'andeerlb', 'karane', 'joaoguilhermedesa'];
+  }
+  return usersString.split(',').map(user => user.trim()).filter(user => user.length > 0);
+};
+
+const GITHUB_USERS = getGitHubUsers();
+const CORPORATE_USERS = getCorporateUsers();
 
 const getCorporateUser = (githubUser) => {
   const idx = GITHUB_USERS.indexOf(githubUser);
