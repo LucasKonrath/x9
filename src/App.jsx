@@ -304,7 +304,11 @@ function App() {
                         <p>{orgError}</p>
                       </div>
                     ) : (
-                      <CommitTimeline events={organizationalEvents} isOrganizational={true} />
+                      <CommitTimeline 
+                        events={organizationalEvents} 
+                        isOrganizational={true}
+                        filterUsername={getCorporateUser(selectedUser)}
+                      />
                     )}
                   </div>
                 )}

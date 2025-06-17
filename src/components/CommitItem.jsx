@@ -1,11 +1,39 @@
 import React from 'react';
 import { format, parseISO } from 'date-fns';
 
-function CommitItem({ event, isOrganizational = false }) {
+function CommitItem({ event, isOrganizational = false, filterUsername = null }) {
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return format(date, 'p', { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
   };
+
+  // Filter commits for organizational view to show only those by the specific user
+  const getFilteredCommits = () => {
+    if (!event.payload?.commits) return [];
+    
+    if (isOrganizational && filterUsername) {
+      // For organizational commits, filter by author name or email
+      return event.payload.commits.filter(commit => {
+        const authorName = commit.author?.name?.toLowerCase();
+        const authorEmail = commit.author?.email?.toLowerCase();
+        const usernameToMatch = filterUsername.toLowerCase();
+        
+        // Match by name or if email contains the username
+        return authorName === usernameToMatch || 
+               authorEmail?.includes(usernameToMatch) ||
+               authorEmail?.startsWith(usernameToMatch);
+      });
+    }
+    
+    return event.payload.commits;
+  };
+
+  const filteredCommits = getFilteredCommits();
+
+  // Don't render if no commits match the filter
+  if (filteredCommits.length === 0) {
+    return null;
+  }
 
   // Get the appropriate base URL
   const getBaseUrl = () => {
@@ -68,7 +96,7 @@ function CommitItem({ event, isOrganizational = false }) {
           </div>
 
           <div className="space-y-3 mt-3">
-            {event.payload.commits.map(commit => (
+            {filteredCommits.map(commit => (
               <div key={commit.sha} className="border-l-2 border-[#16a34a] pl-3">
                 <div className="flex items-start">
                   <div className="min-w-0 flex-1">
