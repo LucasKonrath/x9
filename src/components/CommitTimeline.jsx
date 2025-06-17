@@ -2,7 +2,7 @@ import React from 'react';
 import { format, parseISO } from 'date-fns';
 import CommitItem from './CommitItem';
 
-function CommitTimeline({ events }) {
+function CommitTimeline({ events, isOrganizational = false }) {
   const [isCollapsed, setIsCollapsed] = React.useState(true);
 
   // Filter only for PushEvents that have commits
@@ -78,7 +78,7 @@ function CommitTimeline({ events }) {
             </div>
             <div className="divide-y divide-[#334155]">
               {groupedEvents[date].map(event => (
-                <CommitItem key={event.id} event={event} />
+                <CommitItem key={event.id} event={event} isOrganizational={isOrganizational} />
               ))}
             </div>
           </div>

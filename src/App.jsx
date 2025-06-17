@@ -187,7 +187,12 @@ function App() {
       setOrgError(null);
       try {
         console.log('Loading organizational data for user:', selectedUser);
-        const orgEvents = await fetchOrganizationalEvents(selectedUser);
+        const corporateUser = getCorporateUser(selectedUser);
+        if (!corporateUser) {
+          throw new Error('No corporate user mapping found');
+        }
+        
+        const orgEvents = await fetchOrganizationalEvents(corporateUser);
         setOrganizationalEvents(orgEvents);
         console.log('Organizational events loaded:', orgEvents.length);
       } catch (err) {
@@ -283,7 +288,7 @@ function App() {
                         <div className="animate-spin rounded-full h-6 w-6 border-2 border-[#4ade80] border-t-transparent"></div>
                       </div>
                     ) : (
-                      <CommitTimeline events={events} />
+                      <CommitTimeline events={events} isOrganizational={false} />
                     )}
                   </div>
                 )}
@@ -299,7 +304,7 @@ function App() {
                         <p>{orgError}</p>
                       </div>
                     ) : (
-                      <CommitTimeline events={organizationalEvents} />
+                      <CommitTimeline events={organizationalEvents} isOrganizational={true} />
                     )}
                   </div>
                 )}

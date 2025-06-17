@@ -32,18 +32,13 @@ export const fetchOrganizationalEvents = async (username) => {
       throw new Error('VITE_GITHUB_TOKEN environment variable not set');
     }
 
-    const response = await axios.get(`https://github.${orgDomain}.com/api/v3/events`, {
+    const response = await axios.get(`https://github.${orgDomain}.com/api/v3/users/${username}/events`, {
       headers: {
         'Authorization': `bearer ${token}`
       }
     });
 
-    // Filter events by the specific user
-    const userEvents = response.data.filter(event => 
-      event.actor && event.actor.login === username
-    );
-
-    return userEvents;
+    return response.data;
   } catch (error) {
     console.error(`Error fetching organizational events for user ${username}:`, error);
     throw new Error(error.response?.data?.message || 'Failed to fetch organizational events');
