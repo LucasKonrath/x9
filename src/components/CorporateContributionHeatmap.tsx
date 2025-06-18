@@ -144,7 +144,7 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
   };
 
   const getContributionColor = (count: number) => {
-    if (count === 0) return 'bg-white';
+    if (count === 0) return 'bg-[#374151]'; // Gray-700 for good contrast
     if (count <= 3) return 'bg-[#4ade80] opacity-40';
     if (count <= 6) return 'bg-[#4ade80] opacity-60';
     if (count <= 9) return 'bg-[#4ade80] opacity-80';

@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { format, parseISO, differenceInDays, startOfDay, eachDayOfInterval, subDays } from 'date-fns';
 import { contributionsQuery, fetchGraphQL } from '../utils/graphql';
 
-function GitHubAnalytics({ username }) {
+function GitHubAnalytics({ username, events = [] }) {
   const [contributions, setContributions] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [repositoryData, setRepositoryData] = useState([]);
 
   useEffect(() => {
     const fetchContributions = async () => {
@@ -172,8 +173,208 @@ function GitHubAnalytics({ username }) {
     };
   };
 
+  // Calculate repository language statistics
+  const calculateRepositoryStats = () => {
+    const repoMap = new Map();
+    const languageMap = new Map();
+    
+    events.forEach(event => {
+      if (event.type === 'PushEvent' && event.payload?.commits) {
+        const repoName = event.repo.name;
+        
+        if (!repoMap.has(repoName)) {
+          repoMap.set(repoName, {
+            name: repoName,
+            commits: 0,
+            lastActivity: event.created_at,
+            languages: new Set()
+          });
+        }
+        
+        const repo = repoMap.get(repoName);
+        repo.commits += event.payload.commits.length;
+        
+        // Infer language from repository name patterns (basic heuristics)
+        const inferLanguage = (repoName) => {
+          const lower = repoName.toLowerCase();
+          if (lower.includes('react') || lower.includes('next') || lower.includes('js')) return 'JavaScript';
+          if (lower.includes('python') || lower.includes('py') || lower.includes('django')) return 'Python';
+          if (lower.includes('java') && !lower.includes('javascript')) return 'Java';
+          if (lower.includes('go') || lower.includes('golang')) return 'Go';
+          if (lower.includes('rust') || lower.includes('rs')) return 'Rust';
+          if (lower.includes('cpp') || lower.includes('c++')) return 'C++';
+          if (lower.includes('swift') || lower.includes('ios')) return 'Swift';
+          if (lower.includes('kotlin') || lower.includes('android')) return 'Kotlin';
+          if (lower.includes('php')) return 'PHP';
+          if (lower.includes('ruby') || lower.includes('rails')) return 'Ruby';
+          return 'Other';
+        };
+        
+        const language = inferLanguage(repoName);
+        repo.languages.add(language);
+        
+        languageMap.set(language, (languageMap.get(language) || 0) + event.payload.commits.length);
+      }
+    });
+    
+    const topRepositories = Array.from(repoMap.values())
+      .sort((a, b) => b.commits - a.commits)
+      .slice(0, 5);
+    
+    const languageStats = Array.from(languageMap.entries())
+      .map(([language, commits]) => ({ language, commits }))
+      .sort((a, b) => b.commits - a.commits);
+    
+    return { topRepositories, languageStats };
+  };
+
+  // Analyze commit messages for conventional commits and patterns
+  const analyzeCommitMessages = () => {
+    const commitMessages = [];
+    const typeMap = new Map();
+    const timeMap = new Map();
+    
+    events.forEach(event => {
+      if (event.type === 'PushEvent' && event.payload?.commits) {
+        event.payload.commits.forEach(commit => {
+          commitMessages.push({
+            message: commit.message,
+            date: event.created_at,
+            repo: event.repo.name
+          });
+          
+          // Analyze conventional commit patterns
+          const conventionalMatch = commit.message.match(/^(feat|fix|docs|style|refactor|test|chore|perf|ci|build)(\(.+\))?\!?:/);
+          const type = conventionalMatch ? conventionalMatch[1] : 'other';
+          typeMap.set(type, (typeMap.get(type) || 0) + 1);
+          
+          // Analyze commit timing
+          const hour = new Date(event.created_at).getHours();
+          timeMap.set(hour, (timeMap.get(hour) || 0) + 1);
+        });
+      }
+    });
+    
+    const commitTypes = Array.from(typeMap.entries())
+      .map(([type, count]) => ({ type, count }))
+      .sort((a, b) => b.count - a.count);
+    
+    const peakHours = Array.from(timeMap.entries())
+      .map(([hour, count]) => ({ hour: parseInt(hour), count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+    
+    const conventionalCommitsPercentage = commitMessages.length > 0 
+      ? Math.round(((commitMessages.length - (typeMap.get('other') || 0)) / commitMessages.length) * 100)
+      : 0;
+    
+    return {
+      totalCommits: commitMessages.length,
+      commitTypes,
+      peakHours,
+      conventionalCommitsPercentage,
+      avgMessageLength: commitMessages.length > 0 
+        ? Math.round(commitMessages.reduce((sum, c) => sum + c.message.length, 0) / commitMessages.length)
+        : 0
+    };
+  };
+
+  // Calculate file type contributions
+  const calculateFileTypeStats = () => {
+    const fileTypeMap = new Map();
+    
+    events.forEach(event => {
+      if (event.type === 'PushEvent' && event.payload?.commits) {
+        event.payload.commits.forEach(commit => {
+          // Extract file extensions from commit message (basic heuristics)
+          const extensions = commit.message.match(/\.([a-zA-Z0-9]+)/g) || [];
+          extensions.forEach(ext => {
+            const cleanExt = ext.toLowerCase();
+            fileTypeMap.set(cleanExt, (fileTypeMap.get(cleanExt) || 0) + 1);
+          });
+        });
+      }
+    });
+    
+    return Array.from(fileTypeMap.entries())
+      .map(([extension, count]) => ({ extension, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+  };
+
+  // Calculate branch management insights
+  const calculateBranchInsights = () => {
+    const branchMap = new Map();
+    const repoToBranches = new Map();
+    
+    events.forEach(event => {
+      if (event.type === 'PushEvent' && event.payload?.ref) {
+        const branchName = event.payload.ref.replace('refs/heads/', '');
+        const repoName = event.repo.name;
+        
+        // Track branch usage
+        if (!branchMap.has(branchName)) {
+          branchMap.set(branchName, {
+            name: branchName,
+            commits: 0,
+            repos: new Set(),
+            lastActivity: event.created_at
+          });
+        }
+        
+        const branch = branchMap.get(branchName);
+        branch.commits += event.payload.commits?.length || 0;
+        branch.repos.add(repoName);
+        
+        // Track repo to branches
+        if (!repoToBranches.has(repoName)) {
+          repoToBranches.set(repoName, new Set());
+        }
+        repoToBranches.get(repoName).add(branchName);
+      }
+      
+      // Track branch creation events
+      if (event.type === 'CreateEvent' && event.payload?.ref_type === 'branch') {
+        const branchName = event.payload.ref;
+        if (branchName && !branchMap.has(branchName)) {
+          branchMap.set(branchName, {
+            name: branchName,
+            commits: 0,
+            repos: new Set([event.repo.name]),
+            lastActivity: event.created_at,
+            created: true
+          });
+        }
+      }
+    });
+    
+    // Convert to arrays and calculate insights
+    const branches = Array.from(branchMap.values()).map(branch => ({
+      ...branch,
+      repos: Array.from(branch.repos),
+      repoCount: branch.repos.size
+    }));
+    
+    const branchStats = {
+      totalBranches: branches.length,
+      mainBranchCommits: branches.find(b => b.name === 'main' || b.name === 'master')?.commits || 0,
+      featureBranches: branches.filter(b => b.name.includes('feature') || b.name.includes('feat')).length,
+      bugfixBranches: branches.filter(b => b.name.includes('fix') || b.name.includes('bug')).length,
+      developmentBranches: branches.filter(b => b.name.includes('dev') || b.name.includes('develop')).length,
+      mostActiveBranches: branches
+        .sort((a, b) => b.commits - a.commits)
+        .slice(0, 5)
+    };
+    
+    return branchStats;
+  };
+
   const trendData = calculateProductivityTrends();
   const streakData = calculateStreakAnalysis();
+  const repositoryStats = calculateRepositoryStats();
+  const commitAnalysis = analyzeCommitMessages();
+  const fileTypeStats = calculateFileTypeStats();
+  const branchInsights = calculateBranchInsights();
 
   // Calculate trend direction
   const recentCommits = trendData.slice(-7).reduce((sum, day) => sum + day.commits, 0);
@@ -194,6 +395,38 @@ function GitHubAnalytics({ username }) {
     sampleTrendData: trendData.slice(0, 5),
     totalContributions: contributions.totalContributions
   });
+
+  // Intensity analysis (new feature)
+  const calculateContributionIntensity = () => {
+    const intensityLevels = {
+      light: 0,
+      moderate: 0,
+      heavy: 0,
+      intense: 0
+    };
+    
+    let totalContributions = 0;
+    
+    contributionDays.forEach(day => {
+      if (day.count >= 1 && day.count <= 2) {
+        intensityLevels.light++;
+      } else if (day.count >= 3 && day.count <= 5) {
+        intensityLevels.moderate++;
+      } else if (day.count >= 6 && day.count <= 10) {
+        intensityLevels.heavy++;
+      } else if (day.count > 10) {
+        intensityLevels.intense++;
+      }
+      
+      totalContributions += day.count;
+    });
+    
+    const averageIntensity = totalContributions / contributionDays.length;
+    
+    return { intensityLevels, averageIntensity };
+  };
+
+  const intensityAnalysis = calculateContributionIntensity();
 
   return (
     <div className="bg-[#1e293b] border border-[#334155] rounded-lg p-6 space-y-6">
@@ -314,6 +547,215 @@ function GitHubAnalytics({ username }) {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Contribution Intensity */}
+        <div className="bg-[#0f172a] border border-[#334155] rounded-lg p-4">
+          <h4 className="text-md font-medium text-white mb-4">Contribution Intensity (Last 30 Days)</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="text-center">
+              <div className="text-lg font-bold text-yellow-400">{intensityAnalysis.intensityLevels.light}</div>
+              <div className="text-xs text-gray-400">Light Days</div>
+              <div className="text-xs text-gray-500">1-2 contributions</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-orange-400">{intensityAnalysis.intensityLevels.moderate}</div>
+              <div className="text-xs text-gray-400">Moderate Days</div>
+              <div className="text-xs text-gray-500">3-5 contributions</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-red-400">{intensityAnalysis.intensityLevels.heavy}</div>
+              <div className="text-xs text-gray-400">Heavy Days</div>
+              <div className="text-xs text-gray-500">6-10 contributions</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-purple-400">{intensityAnalysis.intensityLevels.intense}</div>
+              <div className="text-xs text-gray-400">Intense Days</div>
+              <div className="text-xs text-gray-500">10+ contributions</div>
+            </div>
+          </div>
+          <div className="mt-4 pt-3 border-t border-[#334155] text-center">
+            <div className="text-sm text-gray-400">
+              Average intensity: <span className="text-[#4ade80] font-medium">
+                {intensityAnalysis.averageIntensity.toFixed(1)} contributions/day
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Repository Language Statistics */}
+        <div className="bg-[#0f172a] border border-[#334155] rounded-lg p-4">
+          <h4 className="text-md font-medium text-white mb-4">Language Distribution</h4>
+          <div className="space-y-3">
+            {repositoryStats.languageStats.slice(0, 5).map((lang, index) => (
+              <div key={lang.language} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${
+                    index === 0 ? 'bg-blue-400' :
+                    index === 1 ? 'bg-green-400' :
+                    index === 2 ? 'bg-yellow-400' :
+                    index === 3 ? 'bg-purple-400' : 'bg-gray-400'
+                  }`} />
+                  <span className="text-sm text-gray-300">{lang.language}</span>
+                </div>
+                <span className="text-sm text-gray-400">{lang.commits} commits</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 pt-3 border-t border-[#334155]">
+            <div className="text-sm text-gray-400 text-center">
+              Most used: <span className="text-[#4ade80] font-medium">
+                {repositoryStats.languageStats[0]?.language || 'N/A'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Top Repositories */}
+        <div className="bg-[#0f172a] border border-[#334155] rounded-lg p-4">
+          <h4 className="text-md font-medium text-white mb-4">Most Active Repositories</h4>
+          <div className="space-y-3">
+            {repositoryStats.topRepositories.map((repo, index) => (
+              <div key={repo.name} className="flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm font-mono text-gray-400">#{index + 1}</span>
+                  <span className="text-sm text-gray-300 truncate">{repo.name.split('/')[1] || repo.name}</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-[#4ade80]">{repo.commits}</div>
+                  <div className="text-xs text-gray-500">commits</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Commit Message Analysis */}
+        <div className="bg-[#0f172a] border border-[#334155] rounded-lg p-4">
+          <h4 className="text-md font-medium text-white mb-4">Commit Message Analysis</h4>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="text-center">
+              <div className="text-lg font-bold text-[#4ade80]">{commitAnalysis.conventionalCommitsPercentage}%</div>
+              <div className="text-xs text-gray-400">Conventional</div>
+              <div className="text-xs text-gray-500">commits</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-[#4ade80]">{commitAnalysis.avgMessageLength}</div>
+              <div className="text-xs text-gray-400">Avg Length</div>
+              <div className="text-xs text-gray-500">characters</div>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="text-xs text-gray-400 mb-2">Most Used Types:</div>
+            {commitAnalysis.commitTypes.slice(0, 3).map((type, index) => (
+              <div key={type.type} className="flex items-center justify-between">
+                <span className="text-sm text-gray-300 capitalize">{type.type}</span>
+                <span className="text-sm text-gray-400">{type.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Peak Hours Analysis */}
+        <div className="bg-[#0f172a] border border-[#334155] rounded-lg p-4">
+          <h4 className="text-md font-medium text-white mb-4">Peak Coding Hours</h4>
+          <div className="space-y-3">
+            {commitAnalysis.peakHours.map((peak, index) => (
+              <div key={peak.hour} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400">#{index + 1}</span>
+                  <span className="text-sm text-gray-300">
+                    {peak.hour.toString().padStart(2, '0')}:00 - {(peak.hour + 1).toString().padStart(2, '0')}:00
+                  </span>
+                </div>
+                <span className="text-sm text-[#4ade80]">{peak.count} commits</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 pt-3 border-t border-[#334155] text-center">
+            <div className="text-sm text-gray-400">
+              Most productive at: <span className="text-[#4ade80] font-medium">
+                {commitAnalysis.peakHours[0]?.hour.toString().padStart(2, '0')}:00
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* File Type Distribution */}
+        <div className="bg-[#0f172a] border border-[#334155] rounded-lg p-4">
+          <h4 className="text-md font-medium text-white mb-4">File Type Activity</h4>
+          <div className="space-y-2">
+            {fileTypeStats.slice(0, 6).map((fileType, index) => (
+              <div key={fileType.extension} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <code className="text-xs bg-[#334155] px-2 py-1 rounded text-gray-300">
+                    {fileType.extension}
+                  </code>
+                </div>
+                <span className="text-sm text-gray-400">{fileType.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Branch Management Insights */}
+        <div className="bg-[#0f172a] border border-[#334155] rounded-lg p-4">
+          <h4 className="text-md font-medium text-white mb-4 flex items-center gap-2">
+            <svg className="w-4 h-4 text-[#4ade80]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+            </svg>
+            Branch Management
+          </h4>
+          
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="text-center">
+              <div className="text-lg font-bold text-[#4ade80]">{branchInsights.totalBranches}</div>
+              <div className="text-xs text-gray-400">Total Branches</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-[#4ade80]">{branchInsights.mainBranchCommits}</div>
+              <div className="text-xs text-gray-400">Main Branch Commits</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="text-center bg-[#1e293b] rounded p-2">
+              <div className="text-sm font-bold text-blue-400">{branchInsights.featureBranches}</div>
+              <div className="text-xs text-gray-500">Feature</div>
+            </div>
+            <div className="text-center bg-[#1e293b] rounded p-2">
+              <div className="text-sm font-bold text-red-400">{branchInsights.bugfixBranches}</div>
+              <div className="text-xs text-gray-500">Bugfix</div>
+            </div>
+            <div className="text-center bg-[#1e293b] rounded p-2">
+              <div className="text-sm font-bold text-green-400">{branchInsights.developmentBranches}</div>
+              <div className="text-xs text-gray-500">Development</div>
+            </div>
+          </div>
+
+          {branchInsights.mostActiveBranches.length > 0 && (
+            <>
+              <div className="text-xs text-gray-400 mb-2">Most Active Branches:</div>
+              <div className="space-y-2">
+                {branchInsights.mostActiveBranches.slice(0, 3).map((branch, index) => (
+                  <div key={branch.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-xs text-gray-400">#{index + 1}</span>
+                      <code className="text-xs bg-[#334155] px-2 py-1 rounded text-gray-300 truncate">
+                        {branch.name}
+                      </code>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-[#4ade80]">{branch.commits}</div>
+                      <div className="text-xs text-gray-500">commits</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

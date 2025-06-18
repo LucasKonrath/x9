@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import CommitTimeline from './components/CommitTimeline';
-import UserSelector from './components/UserSelector';
-import MarkdownPosts from './components/MarkdownPosts';
-import MarkdownEditor from './components/MarkdownEditor';
-import GitHubContributionGraph from './components/GitHubContributionGraph';
-import GitHubAnalytics from './components/GitHubAnalytics';
-import TeamReport from './components/TeamReport';
 import { fetchUserEvents, fetchMarkdownPosts } from './services/githubService';
+import CommitTimeline from './components/CommitTimeline';
+import GitHubContributionGraph from './components/GitHubContributionGraph';
+import MarkdownEditor from './components/MarkdownEditor';
+import MarkdownPosts from './components/MarkdownPosts';
+import UserSelector from './components/UserSelector';
+import TeamReport from './components/TeamReport';
+import GitHubAnalytics from './components/GitHubAnalytics';
+import ThemeToggle from './components/ThemeToggle';
+import KeyboardShortcuts from './components/KeyboardShortcuts';
+import RecentActivityQuickView from './components/RecentActivityQuickView';
+import SearchComponent from './components/SearchComponent';
+import FavoriteRepositories from './components/FavoriteRepositories';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
 // Get user arrays from environment variables
 const getGitHubUsers = () => {
@@ -35,7 +41,8 @@ const getCorporateUser = (githubUser) => {
   return idx !== -1 ? CORPORATE_USERS[idx] : null;
 }
 
-function App() {
+function AppContent() {
+  const { theme } = useTheme();
   const [selectedUser, setSelectedUser] = useState(GITHUB_USERS[0]);
   const [events, setEvents] = useState([]);
   const [markdownPosts, setMarkdownPosts] = useState([]);
@@ -165,7 +172,23 @@ function App() {
   const handleCancelEdit = () => {
     setEditingPost(null);
     setEditorVisible(false);
-    console.log('Editor visibility set to false in handleCancelEdit');
+  };
+
+  const handleSearchResult = (result) => {
+    console.log('Search result selected:', result);
+    // Handle different types of search results
+    if (result.type === 'post') {
+      // Scroll to the post or highlight it
+      const postElement = document.querySelector(`[data-post-title="${result.data.post.title}"]`);
+      if (postElement) {
+        postElement.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    // Add more result handling as needed
+  };
+
+  const handleNewPost = () => {
+    setEditorVisible(true);
   };
 
   useEffect(() => {
@@ -207,14 +230,30 @@ function App() {
   }, [selectedUser]);
 
   return (
-    <div className="min-h-screen bg-github-dark">
-      <header className="bg-github-header border-b border-github-border">
+    <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-github-dark' : 'bg-white'}`}>
+      <header className={`border-b transition-colors duration-300 ${theme === 'dark' ? 'bg-github-header border-github-border' : 'bg-gray-50 border-gray-200'}`}>
         <div className="container mx-auto px-4 h-16 flex items-center">
           <img src="/x9.png" alt="X9 Logo" className="h-8 mr-4" />
           <div className="flex-1">
-            <h1 className="text-xl font-semibold text-github-text">X9 Team Dashboard</h1>
+            <h1 className={`text-xl font-semibold transition-colors duration-300 ${theme === 'dark' ? 'text-github-text' : 'text-gray-900'}`}>
+              X9 Team Dashboard
+            </h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <SearchComponent 
+              events={events}
+              markdownPosts={markdownPosts}
+              onResultSelect={handleSearchResult}
+            />
+            <RecentActivityQuickView events={events} />
+            <ThemeToggle />
+            <KeyboardShortcuts 
+              onUserSelect={setSelectedUser}
+              users={GITHUB_USERS}
+              selectedUser={selectedUser}
+              onToggleTeamReport={() => setShowTeamReport(true)}
+              onNewPost={handleNewPost}
+            />
             <button
               onClick={() => setShowTeamReport(true)}
               className="px-4 py-2 bg-[#1e293b] text-[#4ade80] border border-[#22c55e] rounded-md hover:bg-[#334155] transition-colors duration-200"
@@ -247,6 +286,13 @@ function App() {
           <>
             <GitHubContributionGraph username={selectedUser}
             corporateUser={ getCorporateUser(selectedUser) } />
+            
+            {/* Favorite Repositories */}
+            <FavoriteRepositories 
+              events={events}
+              onPin={(repo) => console.log('Pinned:', repo)}
+              onUnpin={(repo) => console.log('Unpinned:', repo)}
+            />
             
             {/* POCs worked this week section */}
             {reposThisWeek.length > 0 && (
@@ -309,6 +355,14 @@ function App() {
         />
       )}
     </div>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 
