@@ -63,12 +63,18 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
         setIsLoading(true);
         
         const now = new Date();
-        const fromDate = new Date(now);
-        fromDate.setDate(now.getDate() - 365); // Fetch data for the last 365 days
+        
+        // Set from date to the start of the current year
+        const currentYear = now.getFullYear();
+        const fromDate = new Date(currentYear, 0, 1); // January 1st of current year
         const fromIso = fromDate.toISOString();
-        const tomorrow = new Date();
-        tomorrow.setDate(now.getDate() + 1); // Include today
-        const toIso = tomorrow.toISOString();
+        const toIso = now.toISOString();
+        
+        console.log('Corporate date range for contributions:', {
+          from: fromIso,
+          to: toIso,
+          year: currentYear
+        });
 
         const response = await fetch('/api/github-corporate', {
           method: 'POST',

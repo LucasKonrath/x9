@@ -45,8 +45,16 @@ function GitHubContributionGraph({ username, corporateUser, minimal = false }) {
       try {
         setIsLoading(true);
         const now = new Date();
-        const fromDate = new Date(now);
-        fromDate.setFullYear(fromDate.getFullYear() - 1);
+        
+        // Set from date to the start of the current year
+        const currentYear = now.getFullYear();
+        const fromDate = new Date(currentYear, 0, 1); // January 1st of current year
+        
+        console.log('Date range for contributions:', {
+          from: fromDate.toISOString(),
+          to: now.toISOString(),
+          year: currentYear
+        });
 
         const data = await fetchGraphQL(contributionsQuery, {
           username,
@@ -87,14 +95,14 @@ function GitHubContributionGraph({ username, corporateUser, minimal = false }) {
     setShowTooltip(true);
   };
 
-  // Get total contributions for 2025 from GraphQL (already filtered by from/to dates)
+  // Get total contributions for current year from GraphQL (already filtered by from/to dates)
   const totalContributions = contributionsCollection?.contributionCalendar?.totalContributions || 0;
   
-  // Calculate restricted contributions for 2025 (already filtered by from/to dates)
+  // Calculate restricted contributions for current year (already filtered by from/to dates)
   const restrictedContributions = contributionsCollection?.restrictedContributionsCount || 0;
   
-  // Calculate public contributions: total - private (both are for 2025 only)
-  const publicContributions2025 = totalContributions - restrictedContributions;
+  // Calculate public contributions: total - private (both are for current year only)
+  const publicContributions = totalContributions - restrictedContributions;
 
   const trendData = calculateTrend(contributions?.weeks || []);
 
@@ -117,10 +125,10 @@ function GitHubContributionGraph({ username, corporateUser, minimal = false }) {
             <div className="flex items-center gap-3">
               <div className="text-right">
                 <span className="text-[#4ade80] font-medium">
-                  ~{publicContributions2025} Public Commits in 2025
+                  ~{publicContributions} Public Commits in {new Date().getFullYear()}
                 </span>
                 <div className="text-gray-400 text-xs">
-                  {totalContributions} total 2025 · {restrictedContributions} private 2025
+                  {totalContributions} total {new Date().getFullYear()} · {restrictedContributions} private {new Date().getFullYear()}
                 </div>
               </div>
               {trendData.trend !== 'neutral' && (
