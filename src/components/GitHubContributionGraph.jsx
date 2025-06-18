@@ -35,6 +35,7 @@ const calculateTrend = (weeks) => {
 function GitHubContributionGraph({ username, corporateUser, minimal = false }) {
   const [isLoading, setIsLoading] = React.useState(true);
   const [contributions, setContributions] = React.useState(null);
+  const [contributionsCollection, setContributionsCollection] = React.useState(null);
   const [tooltipContent, setTooltipContent] = useState('');
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [showTooltip, setShowTooltip] = useState(false);
@@ -53,7 +54,9 @@ function GitHubContributionGraph({ username, corporateUser, minimal = false }) {
           to: now.toISOString()
         }, true);
 
-        setContributions(data.data.user.contributionsCollection.contributionCalendar);
+        const contributionsCollectionData = data.data.user.contributionsCollection;
+        setContributionsCollection(contributionsCollectionData);
+        setContributions(contributionsCollectionData.contributionCalendar);
       } catch (error) {
         console.error('Error fetching contributions:', error);
       } finally {
@@ -88,6 +91,10 @@ function GitHubContributionGraph({ username, corporateUser, minimal = false }) {
     sum + week.contributionDays.reduce((wSum, day) => 
       wSum + (day.date.startsWith('2025') ? day.contributionCount : 0), 0), 0) || 0;
 
+  // Calculate public contributions: total - private
+  const restrictedContributions2025 = contributionsCollection?.restrictedContributionsCount || 0;
+  const publicContributions2025 = total2025Contributions - restrictedContributions2025;
+
   const trendData = calculateTrend(contributions?.weeks || []);
 
   // Calculate trend data
@@ -107,9 +114,16 @@ function GitHubContributionGraph({ username, corporateUser, minimal = false }) {
               {minimal ? 'Public Activity' : 'Contribution Activity'}
             </h3>
             <div className="flex items-center gap-3">
-              <span className="text-[#4ade80] font-medium">
-                {total2025Contributions} Commits in 2025
-              </span>
+              <div className="text-right">
+                <span className="text-[#4ade80] font-medium">
+                  {publicContributions2025} Public Commits in 2025
+                </span>
+                {restrictedContributions2025 > 0 && (
+                  <div className="text-gray-400 text-sm">
+                    +{restrictedContributions2025} Private
+                  </div>
+                )}
+              </div>
               {trendData.trend !== 'neutral' && (
                 <div 
                   className="flex items-center gap-1 cursor-help"
