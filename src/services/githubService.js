@@ -7,7 +7,16 @@ import axios from 'axios';
  */
 export const fetchUserEvents = async (username) => {
   try {
-    const response = await axios.get(`https://api.github.com/users/${username}/events`);
+    const token = import.meta.env.VITE_PERSONAL_GITHUB_TOKEN;
+    const headers = {};
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await axios.get(`https://api.github.com/users/${username}/events`, {
+      headers
+    });
     return response.data;
   } catch (error) {
     console.error(`Error fetching events for user ${username}:`, error);

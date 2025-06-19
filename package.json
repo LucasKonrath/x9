@@ -26,8 +26,8 @@
   "scripts": {
     "dev": "vite",
     "dev:server": "nodemon server.js",
-    "dev:ai": "cd spring-ai-app && ./start.sh",
-    "dev:all": "concurrently --names \"AI,REACT,SERVER\" --prefix-colors \"green,cyan,yellow\" \"npm run dev:ai\" \"npm run dev\" \"npm run dev:server\" \"sleep 8 && open http://localhost:5173\"",
+    "dev:ai": "cd spring-ai-app && ./start-new.sh",
+    "dev:all": "set -a && source .env && set +a && concurrently --names \"AI,REACT,SERVER\" --prefix-colors \"green,cyan,yellow\" \"npm run dev:ai\" \"npm run dev\" \"npm run dev:server\" \"sleep 8 && open http://localhost:5173\"",
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server.js"

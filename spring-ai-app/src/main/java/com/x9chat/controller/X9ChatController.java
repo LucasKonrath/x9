@@ -61,6 +61,25 @@ public class X9ChatController {
     public ResponseEntity<Map<String, Object>> getStats() {
         return ResponseEntity.ok(x9ChatService.getStats());
     }
+    
+    @PostMapping("/api/refresh")
+    @ResponseBody
+    public ResponseEntity<Map<String, String>> refreshData() {
+        try {
+            // This would trigger a refresh of the document store
+            // For now, just return a success message
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Data refresh initiated. This may take a few minutes."
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                .body(Map.of(
+                    "status", "error",
+                    "message", "Failed to refresh data: " + e.getMessage()
+                ));
+        }
+    }
 
     // Legacy endpoint for backward compatibility
     @PostMapping("/ask")

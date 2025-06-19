@@ -22,7 +22,7 @@ const X9ChatComponent = ({ isOpen, onToggle }) => {
 
   const checkConnection = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/stats');
+      const response = await fetch('http://localhost:8081/api/stats');
       setIsConnected(response.ok);
     } catch (error) {
       setIsConnected(false);
@@ -45,7 +45,7 @@ const X9ChatComponent = ({ isOpen, onToggle }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8080/api/chat', {
+      const response = await fetch('http://localhost:8081/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
