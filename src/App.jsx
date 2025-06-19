@@ -12,6 +12,7 @@ import KeyboardShortcuts from './components/KeyboardShortcuts';
 import RecentActivityQuickView from './components/RecentActivityQuickView';
 import SearchComponent from './components/SearchComponent';
 import FavoriteRepositories from './components/FavoriteRepositories';
+import X9ChatComponent from './components/X9ChatComponent';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
 // Get user arrays from environment variables
@@ -52,6 +53,7 @@ function AppContent() {
   const [editingPost, setEditingPost] = useState(null);
   const [editorVisible, setEditorVisible] = useState(false);
   const [showTeamReport, setShowTeamReport] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Function to get repositories worked on in the last week
   const getReposWorkedThisWeek = () => {
@@ -371,6 +373,12 @@ function AppContent() {
           onClose={() => setShowTeamReport(false)}
         />
       )}
+
+      {/* X9 Chat Component */}
+      <X9ChatComponent 
+        isOpen={isChatOpen} 
+        onToggle={() => setIsChatOpen(!isChatOpen)} 
+      />
     </div>
   );
 }
