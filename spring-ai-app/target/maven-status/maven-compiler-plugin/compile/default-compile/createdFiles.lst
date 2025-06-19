@@ -1,11 +1,5 @@
-com/x9chat/service/GitHubService$ContributionData.class
-com/x9chat/config/DocumentConfig$MonthlyCommitSummary.class
-com/x9chat/service/GitHubService.class
-com/x9chat/service/GitHubService$CommitData.class
-com/x9chat/X9ChatAiApplication.class
-com/x9chat/config/DocumentConfig.class
 com/x9chat/config/CorsConfig.class
-com/x9chat/service/GitHubService$DailyContribution.class
 com/x9chat/config/VectorStoreConfig.class
 com/x9chat/controller/X9ChatController.class
 com/x9chat/service/X9ChatService.class
+com/x9chat/X9ChatAiApplication.class
