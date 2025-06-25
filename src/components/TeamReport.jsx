@@ -113,6 +113,17 @@ function TeamReport({ users, corporateUsers, onClose }) {
           const markdownPosts = await fetchMarkdownPosts(username);
           const latestNote = markdownPosts.length > 0 ? markdownPosts[0] : null;
 
+          // Fetch reinforcement data
+          let reinforcements = null;
+          try {
+            const reinforcementResponse = await fetch(`http://localhost:3001/api/users/${username}/reinforcements`);
+            if (reinforcementResponse.ok) {
+              reinforcements = await reinforcementResponse.json();
+            }
+          } catch (err) {
+            console.warn(`Failed to fetch reinforcements for ${username}:`, err);
+          }
+
           // Calculate 2025 contributions
           const personal2025Contributions = personalData.data.user.contributionsCollection.contributionCalendar.weeks
             .reduce((sum, week) => sum + week.contributionDays
@@ -127,7 +138,8 @@ function TeamReport({ users, corporateUsers, onClose }) {
             corporateUser,
             personal2025Contributions,
             corporate2025Contributions,
-            latestNote
+            latestNote,
+            reinforcements
           };
         }));
 
@@ -271,6 +283,59 @@ function TeamReport({ users, corporateUsers, onClose }) {
                     <div className="bg-[#1e293b] rounded p-4">
                       <div className="prose prose-invert max-w-none">
                         <ReactMarkdown>{userData.latestNote.content}</ReactMarkdown>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {userData.reinforcements && userData.reinforcements.reinforcements && userData.reinforcements.reinforcements.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium text-gray-400 mb-2 flex justify-between items-center">
+                      <span>Current Reinforcements</span>
+                      <span className="text-[#4ade80] text-xs">
+                        Updated: {userData.reinforcements.lastUpdated}
+                      </span>
+                    </h4>
+                    <div className="bg-[#1e293b] rounded p-4">
+                      <div className="grid gap-3">
+                        {userData.reinforcements.reinforcements.map((reinforcement) => (
+                          <div key={reinforcement.id} className="border-l-4 pl-3 py-2" style={{
+                            borderLeftColor: 
+                              reinforcement.priority === 'high' ? '#ef4444' :
+                              reinforcement.priority === 'medium' ? '#f59e0b' : '#6b7280'
+                          }}>
+                            <div className="flex items-start justify-between mb-1">
+                              <span className="text-sm font-medium text-white">
+                                {reinforcement.category}
+                              </span>
+                              <div className="flex gap-2">
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                  reinforcement.priority === 'high' ? 'bg-red-900 text-red-300' :
+                                  reinforcement.priority === 'medium' ? 'bg-yellow-900 text-yellow-300' :
+                                  'bg-gray-900 text-gray-300'
+                                }`}>
+                                  {reinforcement.priority}
+                                </span>
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                  reinforcement.status === 'strength' ? 'bg-green-900 text-green-300' :
+                                  reinforcement.status === 'needs_improvement' ? 'bg-red-900 text-red-300' :
+                                  reinforcement.status === 'ongoing' ? 'bg-blue-900 text-blue-300' :
+                                  'bg-gray-900 text-gray-300'
+                                }`}>
+                                  {reinforcement.status.replace('_', ' ')}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-sm text-gray-300 mb-1">
+                              {reinforcement.description}
+                            </p>
+                            {reinforcement.notes && (
+                              <p className="text-xs text-gray-400">
+                                {reinforcement.notes}
+                              </p>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
