@@ -80,7 +80,7 @@ public class DocumentConfig {
                         }
 
                         try (Stream<Path> files = Files.list(userDir)) {
-                            files.filter(file -> file.toString().endsWith(".md"))
+                            files.filter(file -> file.toString().endsWith(".md") || file.toString().endsWith("reinforcements.json"))
                                     .forEach(file -> {
                                         try {
                                             loadDocumentFromFile(file, username, documents);
@@ -123,7 +123,14 @@ public class DocumentConfig {
             for (Document doc : docs) {
                 doc.getMetadata().put("source", filename);
                 doc.getMetadata().put("username", username);
-                doc.getMetadata().put("type", "team-activity");
+                
+                // Determine document type based on filename
+                if (filename.endsWith("reinforcements.json")) {
+                    doc.getMetadata().put("type", "reinforcements");
+                } else {
+                    doc.getMetadata().put("type", "team-activity");
+                }
+                
                 doc.getMetadata().put("filepath", file.toString());
 
                 if (date != null) {

@@ -159,6 +159,156 @@ app.get('/api/github-corporate/:username', async (req, res) => {
   }
 });
 
+// Reinforcement Management Endpoints
+
+// Get all users (directories in public folder)
+app.get('/api/users', (req, res) => {
+  const publicDir = path.join(__dirname, 'public');
+  
+  try {
+    const items = fs.readdirSync(publicDir);
+    const users = items.filter(item => {
+      const itemPath = path.join(publicDir, item);
+      return fs.statSync(itemPath).isDirectory() && !item.startsWith('.');
+    });
+    
+    res.json(users);
+  } catch (error) {
+    console.error('Error reading users:', error);
+    res.status(500).json({ error: 'Error reading users' });
+  }
+});
+
+// Get user reinforcements
+app.get('/api/users/:username/reinforcements', (req, res) => {
+  const username = req.params.username;
+  const reinforcementFile = path.join(__dirname, 'public', username, 'reinforcements.json');
+
+  try {
+    if (!fs.existsSync(reinforcementFile)) {
+      // Create default reinforcements file
+      const defaultReinforcements = {
+        version: "1.0",
+        lastUpdated: new Date().toISOString().split('T')[0],
+        reinforcements: []
+      };
+      
+      const userDir = path.join(__dirname, 'public', username);
+      if (!fs.existsSync(userDir)) {
+        fs.mkdirSync(userDir, { recursive: true });
+      }
+      
+      fs.writeFileSync(reinforcementFile, JSON.stringify(defaultReinforcements, null, 2));
+      return res.json(defaultReinforcements);
+    }
+
+    const reinforcements = JSON.parse(fs.readFileSync(reinforcementFile, 'utf8'));
+    res.json(reinforcements);
+  } catch (error) {
+    console.error('Error reading reinforcements:', error);
+    res.status(500).json({ error: 'Error reading reinforcements' });
+  }
+});
+
+// Add new reinforcement
+app.post('/api/users/:username/reinforcements', (req, res) => {
+  const username = req.params.username;
+  const reinforcementFile = path.join(__dirname, 'public', username, 'reinforcements.json');
+  const newReinforcement = req.body;
+
+  try {
+    let reinforcements;
+    
+    if (fs.existsSync(reinforcementFile)) {
+      reinforcements = JSON.parse(fs.readFileSync(reinforcementFile, 'utf8'));
+    } else {
+      reinforcements = {
+        version: "1.0",
+        lastUpdated: new Date().toISOString().split('T')[0],
+        reinforcements: []
+      };
+      
+      const userDir = path.join(__dirname, 'public', username);
+      if (!fs.existsSync(userDir)) {
+        fs.mkdirSync(userDir, { recursive: true });
+      }
+    }
+
+    // Generate new ID
+    const maxId = reinforcements.reinforcements.reduce((max, r) => Math.max(max, r.id || 0), 0);
+    newReinforcement.id = maxId + 1;
+    newReinforcement.dateAdded = new Date().toISOString().split('T')[0];
+
+    reinforcements.reinforcements.push(newReinforcement);
+    reinforcements.lastUpdated = new Date().toISOString().split('T')[0];
+
+    fs.writeFileSync(reinforcementFile, JSON.stringify(reinforcements, null, 2));
+    res.json(reinforcements);
+  } catch (error) {
+    console.error('Error adding reinforcement:', error);
+    res.status(500).json({ error: 'Error adding reinforcement' });
+  }
+});
+
+// Update reinforcement
+app.put('/api/users/:username/reinforcements/:id', (req, res) => {
+  const username = req.params.username;
+  const reinforcementId = parseInt(req.params.id);
+  const updatedReinforcement = req.body;
+  const reinforcementFile = path.join(__dirname, 'public', username, 'reinforcements.json');
+
+  try {
+    if (!fs.existsSync(reinforcementFile)) {
+      return res.status(404).json({ error: 'Reinforcements file not found' });
+    }
+
+    const reinforcements = JSON.parse(fs.readFileSync(reinforcementFile, 'utf8'));
+    const index = reinforcements.reinforcements.findIndex(r => r.id === reinforcementId);
+    
+    if (index === -1) {
+      return res.status(404).json({ error: 'Reinforcement not found' });
+    }
+
+    // Preserve id and dateAdded
+    updatedReinforcement.id = reinforcementId;
+    if (!updatedReinforcement.dateAdded) {
+      updatedReinforcement.dateAdded = reinforcements.reinforcements[index].dateAdded;
+    }
+
+    reinforcements.reinforcements[index] = updatedReinforcement;
+    reinforcements.lastUpdated = new Date().toISOString().split('T')[0];
+
+    fs.writeFileSync(reinforcementFile, JSON.stringify(reinforcements, null, 2));
+    res.json(reinforcements);
+  } catch (error) {
+    console.error('Error updating reinforcement:', error);
+    res.status(500).json({ error: 'Error updating reinforcement' });
+  }
+});
+
+// Delete reinforcement
+app.delete('/api/users/:username/reinforcements/:id', (req, res) => {
+  const username = req.params.username;
+  const reinforcementId = parseInt(req.params.id);
+  const reinforcementFile = path.join(__dirname, 'public', username, 'reinforcements.json');
+
+  try {
+    if (!fs.existsSync(reinforcementFile)) {
+      return res.status(404).json({ error: 'Reinforcements file not found' });
+    }
+
+    const reinforcements = JSON.parse(fs.readFileSync(reinforcementFile, 'utf8'));
+    reinforcements.reinforcements = reinforcements.reinforcements.filter(r => r.id !== reinforcementId);
+    reinforcements.lastUpdated = new Date().toISOString().split('T')[0];
+
+    fs.writeFileSync(reinforcementFile, JSON.stringify(reinforcements, null, 2));
+    res.json(reinforcements);
+  } catch (error) {
+    console.error('Error deleting reinforcement:', error);
+    res.status(500).json({ error: 'Error deleting reinforcement' });
+  }
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });

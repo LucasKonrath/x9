@@ -13,6 +13,7 @@ import RecentActivityQuickView from './components/RecentActivityQuickView';
 import SearchComponent from './components/SearchComponent';
 import FavoriteRepositories from './components/FavoriteRepositories';
 import X9ChatComponent from './components/X9ChatComponent';
+import ReinforcementManager from './components/ReinforcementManager';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
 // Get user arrays from environment variables
@@ -350,6 +351,15 @@ function AppContent() {
             <MarkdownPosts
               posts={markdownPosts}
               onEdit={handleEditPost}
+            />
+            
+            {/* Reinforcement Manager */}
+            <ReinforcementManager 
+              selectedUser={selectedUser}
+              onReinforcementsChange={(reinforcements) => {
+                // Optional: handle reinforcement changes if needed
+                console.log('Reinforcements updated for', selectedUser, reinforcements);
+              }}
             />
             
             <div className="mt-8 flex justify-end">
