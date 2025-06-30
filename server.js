@@ -309,6 +309,178 @@ app.delete('/api/users/:username/reinforcements/:id', (req, res) => {
   }
 });
 
+// Reading Management Endpoints
+
+// Get user reading data
+app.get('/api/users/:username/reading', (req, res) => {
+  const username = req.params.username;
+  const readingFile = path.join(__dirname, 'public', username, 'reading.json');
+
+  try {
+    if (!fs.existsSync(readingFile)) {
+      // Create default reading file
+      const defaultReading = {
+        version: "1.0",
+        lastUpdated: new Date().toISOString().split('T')[0],
+        currentlyReading: null,
+        booksRead: [],
+        readingGoals: {
+          yearly: 10,
+          completed: 0,
+          target: "General software development and personal growth"
+        }
+      };
+      
+      const userDir = path.join(__dirname, 'public', username);
+      if (!fs.existsSync(userDir)) {
+        fs.mkdirSync(userDir, { recursive: true });
+      }
+      
+      fs.writeFileSync(readingFile, JSON.stringify(defaultReading, null, 2));
+      return res.json(defaultReading);
+    }
+
+    const reading = JSON.parse(fs.readFileSync(readingFile, 'utf8'));
+    res.json(reading);
+  } catch (error) {
+    console.error('Error reading reading data:', error);
+    res.status(500).json({ error: 'Error reading reading data' });
+  }
+});
+
+// Update currently reading book
+app.put('/api/users/:username/reading/current', (req, res) => {
+  const username = req.params.username;
+  const readingFile = path.join(__dirname, 'public', username, 'reading.json');
+  const currentBook = req.body;
+
+  try {
+    let reading;
+    
+    if (fs.existsSync(readingFile)) {
+      reading = JSON.parse(fs.readFileSync(readingFile, 'utf8'));
+    } else {
+      reading = {
+        version: "1.0",
+        lastUpdated: new Date().toISOString().split('T')[0],
+        currentlyReading: null,
+        booksRead: [],
+        readingGoals: { yearly: 10, completed: 0, target: "General development" }
+      };
+      
+      const userDir = path.join(__dirname, 'public', username);
+      if (!fs.existsSync(userDir)) {
+        fs.mkdirSync(userDir, { recursive: true });
+      }
+    }
+
+    reading.currentlyReading = currentBook;
+    reading.lastUpdated = new Date().toISOString().split('T')[0];
+
+    fs.writeFileSync(readingFile, JSON.stringify(reading, null, 2));
+    res.json(reading);
+  } catch (error) {
+    console.error('Error updating current book:', error);
+    res.status(500).json({ error: 'Error updating current book' });
+  }
+});
+
+// Add finished book
+app.post('/api/users/:username/reading/books', (req, res) => {
+  const username = req.params.username;
+  const readingFile = path.join(__dirname, 'public', username, 'reading.json');
+  const newBook = req.body;
+
+  try {
+    let reading;
+    
+    if (fs.existsSync(readingFile)) {
+      reading = JSON.parse(fs.readFileSync(readingFile, 'utf8'));
+    } else {
+      reading = {
+        version: "1.0",
+        lastUpdated: new Date().toISOString().split('T')[0],
+        currentlyReading: null,
+        booksRead: [],
+        readingGoals: { yearly: 10, completed: 0, target: "General development" }
+      };
+      
+      const userDir = path.join(__dirname, 'public', username);
+      if (!fs.existsSync(userDir)) {
+        fs.mkdirSync(userDir, { recursive: true });
+      }
+    }
+
+    // Generate new ID
+    const maxId = reading.booksRead.reduce((max, book) => Math.max(max, book.id || 0), 0);
+    newBook.id = maxId + 1;
+    newBook.completedDate = newBook.completedDate || new Date().toISOString().split('T')[0];
+
+    reading.booksRead.unshift(newBook); // Add to beginning for most recent first
+    reading.readingGoals.completed = reading.booksRead.length;
+    reading.lastUpdated = new Date().toISOString().split('T')[0];
+
+    fs.writeFileSync(readingFile, JSON.stringify(reading, null, 2));
+    res.json(reading);
+  } catch (error) {
+    console.error('Error adding book:', error);
+    res.status(500).json({ error: 'Error adding book' });
+  }
+});
+
+// Update reading goals
+app.put('/api/users/:username/reading/goals', (req, res) => {
+  const username = req.params.username;
+  const readingFile = path.join(__dirname, 'public', username, 'reading.json');
+  const goals = req.body;
+
+  try {
+    if (!fs.existsSync(readingFile)) {
+      return res.status(404).json({ error: 'Reading data not found' });
+    }
+
+    const reading = JSON.parse(fs.readFileSync(readingFile, 'utf8'));
+    reading.readingGoals = { ...reading.readingGoals, ...goals };
+    reading.lastUpdated = new Date().toISOString().split('T')[0];
+
+    fs.writeFileSync(readingFile, JSON.stringify(reading, null, 2));
+    res.json(reading);
+  } catch (error) {
+    console.error('Error updating reading goals:', error);
+    res.status(500).json({ error: 'Error updating reading goals' });
+  }
+});
+
+// Update book rating/review
+app.put('/api/users/:username/reading/books/:id', (req, res) => {
+  const username = req.params.username;
+  const bookId = parseInt(req.params.id);
+  const updatedBook = req.body;
+  const readingFile = path.join(__dirname, 'public', username, 'reading.json');
+
+  try {
+    if (!fs.existsSync(readingFile)) {
+      return res.status(404).json({ error: 'Reading data not found' });
+    }
+
+    const reading = JSON.parse(fs.readFileSync(readingFile, 'utf8'));
+    const bookIndex = reading.booksRead.findIndex(book => book.id === bookId);
+    
+    if (bookIndex === -1) {
+      return res.status(404).json({ error: 'Book not found' });
+    }
+
+    reading.booksRead[bookIndex] = { ...reading.booksRead[bookIndex], ...updatedBook };
+    reading.lastUpdated = new Date().toISOString().split('T')[0];
+
+    fs.writeFileSync(readingFile, JSON.stringify(reading, null, 2));
+    res.json(reading);
+  } catch (error) {
+    console.error('Error updating book:', error);
+    res.status(500).json({ error: 'Error updating book' });
+  }
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });

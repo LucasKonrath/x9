@@ -14,6 +14,7 @@ import SearchComponent from './components/SearchComponent';
 import FavoriteRepositories from './components/FavoriteRepositories';
 import X9ChatComponent from './components/X9ChatComponent';
 import ReinforcementManager from './components/ReinforcementManager';
+import ReadingManager from './components/ReadingManager';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
 // Get user arrays from environment variables
@@ -359,6 +360,15 @@ function AppContent() {
               onReinforcementsChange={(reinforcements) => {
                 // Optional: handle reinforcement changes if needed
                 console.log('Reinforcements updated for', selectedUser, reinforcements);
+              }}
+            />
+            
+            {/* Reading Manager */}
+            <ReadingManager 
+              selectedUser={selectedUser}
+              onReadingChange={(reading) => {
+                // Optional: handle reading changes if needed
+                console.log('Reading data updated for', selectedUser, reading);
               }}
             />
             

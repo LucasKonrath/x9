@@ -124,6 +124,17 @@ function TeamReport({ users, corporateUsers, onClose }) {
             console.warn(`Failed to fetch reinforcements for ${username}:`, err);
           }
 
+          // Fetch reading data
+          let readingData = null;
+          try {
+            const readingResponse = await fetch(`http://localhost:3001/api/users/${username}/reading`);
+            if (readingResponse.ok) {
+              readingData = await readingResponse.json();
+            }
+          } catch (err) {
+            console.warn(`Failed to fetch reading data for ${username}:`, err);
+          }
+
           // Calculate 2025 contributions
           const personal2025Contributions = personalData.data.user.contributionsCollection.contributionCalendar.weeks
             .reduce((sum, week) => sum + week.contributionDays
@@ -139,7 +150,8 @@ function TeamReport({ users, corporateUsers, onClose }) {
             personal2025Contributions,
             corporate2025Contributions,
             latestNote,
-            reinforcements
+            reinforcements,
+            readingData
           };
         }));
 
@@ -337,6 +349,90 @@ function TeamReport({ users, corporateUsers, onClose }) {
                           </div>
                         ))}
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {userData.readingData && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium text-gray-400 mb-2 flex justify-between items-center">
+                      <span>Reading Progress</span>
+                      <span className="text-[#4ade80] text-xs">
+                        {userData.readingData.readingGoals.completed}/{userData.readingData.readingGoals.yearly} books (2025)
+                      </span>
+                    </h4>
+                    <div className="bg-[#1e293b] rounded p-4">
+                      {userData.readingData.currentlyReading && (
+                        <div className="mb-3 pb-3 border-b border-gray-600">
+                          <h5 className="text-sm font-medium text-white mb-1">Currently Reading</h5>
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-300">
+                                "{userData.readingData.currentlyReading.title}" by {userData.readingData.currentlyReading.author}
+                              </p>
+                              {userData.readingData.currentlyReading.notes && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                  {userData.readingData.currentlyReading.notes.substring(0, 100)}
+                                  {userData.readingData.currentlyReading.notes.length > 100 ? '...' : ''}
+                                </p>
+                              )}
+                            </div>
+                            <div className="ml-3 text-right">
+                              <div className="text-sm font-medium text-[#4ade80]">{userData.readingData.currentlyReading.progress}%</div>
+                              <div className="w-16 bg-gray-700 rounded-full h-2 mt-1">
+                                <div 
+                                  className="bg-[#4ade80] h-2 rounded-full"
+                                  style={{ width: `${userData.readingData.currentlyReading.progress}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {userData.readingData.booksRead && userData.readingData.booksRead.length > 0 && (
+                        <div>
+                          <h5 className="text-sm font-medium text-white mb-2">Recent Books</h5>
+                          <div className="space-y-2">
+                            {userData.readingData.booksRead.slice(0, 3).map((book) => (
+                              <div key={book.id} className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <p className="text-sm text-gray-300">
+                                    "{book.title}" by {book.author}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-xs bg-gray-700 px-2 py-1 rounded">
+                                      {book.category}
+                                    </span>
+                                    <div className="flex items-center">
+                                      {'★'.repeat(book.rating)}
+                                      <span className="text-xs text-gray-500 ml-1">({book.rating}/5)</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-xs text-gray-500 ml-2">
+                                  {book.completedDate}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <div className="mt-3 pt-3 border-t border-gray-600">
+                            <div className="flex items-center justify-between text-xs text-gray-400">
+                              <span>Reading Goal Progress:</span>
+                              <div className="flex items-center space-x-2">
+                                <div className="w-24 bg-gray-700 rounded-full h-2">
+                                  <div 
+                                    className="bg-[#4ade80] h-2 rounded-full transition-all duration-300"
+                                    style={{ width: `${Math.min((userData.readingData.readingGoals.completed / userData.readingData.readingGoals.yearly) * 100, 100)}%` }}
+                                  ></div>
+                                </div>
+                                <span>{Math.round((userData.readingData.readingGoals.completed / userData.readingData.readingGoals.yearly) * 100)}%</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
