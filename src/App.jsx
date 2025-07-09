@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchUserEvents, fetchMarkdownPosts } from './services/githubService';
 import CommitTimeline from './components/CommitTimeline';
 import GitHubContributionGraph from './components/GitHubContributionGraph';
+import CorporateContributionHeatmap from './components/CorporateContributionHeatmap';
 import MarkdownEditor from './components/MarkdownEditor';
 import MarkdownPosts from './components/MarkdownPosts';
 import UserSelector from './components/UserSelector';
@@ -11,7 +12,6 @@ import ThemeToggle from './components/ThemeToggle';
 import KeyboardShortcuts from './components/KeyboardShortcuts';
 import RecentActivityQuickView from './components/RecentActivityQuickView';
 import SearchComponent from './components/SearchComponent';
-import FavoriteRepositories from './components/FavoriteRepositories';
 import X9ChatComponent from './components/X9ChatComponent';
 import ReinforcementManager from './components/ReinforcementManager';
 import ReadingManager from './components/ReadingManager';
@@ -110,6 +110,16 @@ function AppContent() {
       label: 'GitHub',
       icon: '💻',
       badge: reposThisWeek.length > 0 ? reposThisWeek.length : null
+    },
+    {
+      id: 'corporate',
+      label: 'Corporate',
+      icon: '🏢'
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics',
+      icon: '📊'
     },
     {
       id: 'meetings',
@@ -354,14 +364,6 @@ function AppContent() {
               <>
                 <GitHubContributionGraph 
                   username={selectedUser}
-                  corporateUser={getCorporateUser(selectedUser)} 
-                />
-                
-                {/* Favorite Repositories */}
-                <FavoriteRepositories 
-                  events={events}
-                  onPin={(repo) => console.log('Pinned:', repo)}
-                  onUnpin={(repo) => console.log('Unpinned:', repo)}
                 />
                 
                 {/* POCs worked this week section */}
@@ -397,8 +399,36 @@ function AppContent() {
                 
                 {/* Personal Commits Timeline */}
                 <CommitTimeline events={events} isOrganizational={false} />
-                
-                {/* GitHub Analytics */}
+              </>
+            )}
+
+            {/* Corporate Tab */}
+            {activeTab === 'corporate' && (
+              <>
+                {getCorporateUser(selectedUser) ? (
+                  <CorporateContributionHeatmap 
+                    corporateUser={getCorporateUser(selectedUser)}
+                    minimal={false} 
+                  />
+                ) : (
+                  <div className="bg-[#1e293b] border border-[#334155] rounded-lg p-8 text-center">
+                    <div className="text-gray-400 mb-4">
+                      <svg className="mx-auto h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H9m0 0H5m0 0h2M7 7h.01M7 3h.01" />
+                      </svg>
+                      <h3 className="text-lg font-semibold text-white mb-2">No Corporate Account Configured</h3>
+                      <p className="text-gray-400">
+                        No corporate GitHub account is configured for {selectedUser}.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Analytics Tab */}
+            {activeTab === 'analytics' && (
+              <>
                 <GitHubAnalytics username={selectedUser} />
               </>
             )}

@@ -3,7 +3,7 @@ import { format, parseISO } from 'date-fns';
 import CommitItem from './CommitItem';
 
 function CommitTimeline({ events, isOrganizational = false, filterUsername = null }) {
-  const [isCollapsed, setIsCollapsed] = React.useState(true);
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
 
   // Filter only for PushEvents that have commits
   const pushEvents = events.filter(event => 
