@@ -16,6 +16,7 @@ import X9ChatComponent from './components/X9ChatComponent';
 import ReinforcementManager from './components/ReinforcementManager';
 import ReadingManager from './components/ReadingManager';
 import GitHubRanking from './components/GitHubRanking';
+import NavBar from './components/NavBar';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
 // Get user arrays from environment variables
@@ -58,6 +59,7 @@ function AppContent() {
   const [showTeamReport, setShowTeamReport] = useState(false);
   const [showRankings, setShowRankings] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('github');
 
   // Function to get repositories worked on in the last week
   const getReposWorkedThisWeek = () => {
@@ -100,6 +102,32 @@ function AppContent() {
   };
 
   const reposThisWeek = getReposWorkedThisWeek();
+
+  // Tab configuration
+  const tabs = [
+    {
+      id: 'github',
+      label: 'GitHub',
+      icon: '💻',
+      badge: reposThisWeek.length > 0 ? reposThisWeek.length : null
+    },
+    {
+      id: 'meetings',
+      label: 'Meetings',
+      icon: '📝',
+      badge: markdownPosts.length > 0 ? markdownPosts.length : null
+    },
+    {
+      id: 'reinforcements',
+      label: 'Reinforcements',
+      icon: '🎯'
+    },
+    {
+      id: 'reading',
+      label: 'Reading',
+      icon: '📚'
+    }
+  ];
 
   // Function to save markdown post
   const saveMarkdownPost = async (username, fileName, content) => {
@@ -299,7 +327,14 @@ function AppContent() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-6xl space-y-6">
+      {/* Navigation Bar */}
+      <NavBar 
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        tabs={tabs}
+      />
+
+      <main className="container mx-auto px-4 py-8 max-w-6xl">
         {loading && (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-2 border-github-green border-t-transparent"></div>
@@ -313,88 +348,102 @@ function AppContent() {
         )}
 
         {!loading && !error && (
-          <>
-            <GitHubContributionGraph username={selectedUser}
-            corporateUser={ getCorporateUser(selectedUser) } />
-            
-            {/* Favorite Repositories */}
-            <FavoriteRepositories 
-              events={events}
-              onPin={(repo) => console.log('Pinned:', repo)}
-              onUnpin={(repo) => console.log('Unpinned:', repo)}
-            />
-            
-            {/* POCs worked this week section */}
-            {reposThisWeek.length > 0 && (
-              <div className="bg-[#1e293b] border border-[#334155] rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center">
-                    <svg className="w-5 h-5 text-[#4ade80] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    <h3 className="text-lg font-semibold text-white">POCs worked this week</h3>
+          <div className="space-y-6">
+            {/* GitHub Tab */}
+            {activeTab === 'github' && (
+              <>
+                <GitHubContributionGraph 
+                  username={selectedUser}
+                  corporateUser={getCorporateUser(selectedUser)} 
+                />
+                
+                {/* Favorite Repositories */}
+                <FavoriteRepositories 
+                  events={events}
+                  onPin={(repo) => console.log('Pinned:', repo)}
+                  onUnpin={(repo) => console.log('Unpinned:', repo)}
+                />
+                
+                {/* POCs worked this week section */}
+                {reposThisWeek.length > 0 && (
+                  <div className="bg-[#1e293b] border border-[#334155] rounded-lg p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center">
+                        <svg className="w-5 h-5 text-[#4ade80] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        <h3 className="text-lg font-semibold text-white">POCs worked this week</h3>
+                      </div>
+                      <span className="text-sm text-gray-400">({reposThisWeek.length} repositories)</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 max-h-none">
+                      {reposThisWeek.map(repoName => (
+                        <a
+                          key={repoName}
+                          href={`https://github.com/${repoName}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center px-3 py-2 bg-[#0f172a] border border-[#334155] rounded-md text-sm text-[#4ade80] hover:text-[#86efac] hover:border-[#22c55e] transition-colors duration-200 w-full"
+                        >
+                          <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                          <span className="truncate">{repoName.split('/')[1] || repoName}</span>
+                        </a>
+                      ))}
+                    </div>
                   </div>
-                  <span className="text-sm text-gray-400">({reposThisWeek.length} repositories)</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 max-h-none">
-                  {reposThisWeek.map(repoName => (
-                    <a
-                      key={repoName}
-                      href={`https://github.com/${repoName}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center px-3 py-2 bg-[#0f172a] border border-[#334155] rounded-md text-sm text-[#4ade80] hover:text-[#86efac] hover:border-[#22c55e] transition-colors duration-200 w-full"
-                    >
-                      <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                      <span className="truncate">{repoName.split('/')[1] || repoName}</span>
-                    </a>
-                  ))}
-                </div>
-              </div>
+                )}
+                
+                {/* Personal Commits Timeline */}
+                <CommitTimeline events={events} isOrganizational={false} />
+                
+                {/* GitHub Analytics */}
+                <GitHubAnalytics username={selectedUser} />
+              </>
             )}
-            
-            {/* Personal Commits Timeline */}
-            <CommitTimeline events={events} isOrganizational={false} />
-            
-            {/* GitHub Analytics */}
-            <GitHubAnalytics username={selectedUser} />
-            
-            <MarkdownPosts
-              posts={markdownPosts}
-              onEdit={handleEditPost}
-            />
-            
-            {/* Reinforcement Manager */}
-            <ReinforcementManager 
-              selectedUser={selectedUser}
-              onReinforcementsChange={(reinforcements) => {
-                // Optional: handle reinforcement changes if needed
-                console.log('Reinforcements updated for', selectedUser, reinforcements);
-              }}
-            />
-            
-            {/* Reading Manager */}
-            <ReadingManager 
-              selectedUser={selectedUser}
-              onReadingChange={(reading) => {
-                // Optional: handle reading changes if needed
-                console.log('Reading data updated for', selectedUser, reading);
-              }}
-            />
-            
-            <div className="mt-8 flex justify-end">
-              <MarkdownEditor
-                key={editingPost ? `edit-${editingPost.title}` : 'create-new'}
-                username={selectedUser}
-                onSave={saveMarkdownPost}
-                editingPost={editingPost}
-                onCancelEdit={handleCancelEdit}
-                forceOpen={editorVisible}
+
+            {/* Meetings Tab */}
+            {activeTab === 'meetings' && (
+              <>
+                <MarkdownPosts
+                  posts={markdownPosts}
+                  onEdit={handleEditPost}
+                />
+                
+                <div className="mt-8 flex justify-end">
+                  <MarkdownEditor
+                    key={editingPost ? `edit-${editingPost.title}` : 'create-new'}
+                    username={selectedUser}
+                    onSave={saveMarkdownPost}
+                    editingPost={editingPost}
+                    onCancelEdit={handleCancelEdit}
+                    forceOpen={editorVisible}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Reinforcements Tab */}
+            {activeTab === 'reinforcements' && (
+              <ReinforcementManager 
+                selectedUser={selectedUser}
+                onReinforcementsChange={(reinforcements) => {
+                  console.log('Reinforcements updated for', selectedUser, reinforcements);
+                }}
               />
-            </div>
-          </>
+            )}
+
+            {/* Reading Tab */}
+            {activeTab === 'reading' && (
+              <ReadingManager 
+                selectedUser={selectedUser}
+                onReadingChange={(reading) => {
+                  console.log('Reading data updated for', selectedUser, reading);
+                }}
+              />
+            )}
+          </div>
         )}
       </main>
 
