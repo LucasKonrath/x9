@@ -15,6 +15,7 @@ import FavoriteRepositories from './components/FavoriteRepositories';
 import X9ChatComponent from './components/X9ChatComponent';
 import ReinforcementManager from './components/ReinforcementManager';
 import ReadingManager from './components/ReadingManager';
+import GitHubRanking from './components/GitHubRanking';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
 // Get user arrays from environment variables
@@ -370,6 +371,12 @@ function AppContent() {
                 // Optional: handle reading changes if needed
                 console.log('Reading data updated for', selectedUser, reading);
               }}
+            />
+            
+            {/* GitHub Contributions Ranking */}
+            <GitHubRanking 
+              users={GITHUB_USERS}
+              corporateUsers={CORPORATE_USERS}
             />
             
             <div className="mt-8 flex justify-end">
