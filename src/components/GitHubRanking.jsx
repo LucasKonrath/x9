@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { contributionsQuery, fetchGraphQL } from '../utils/graphql';
 
@@ -9,6 +9,15 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
   const [error, setError] = useState(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [rankingType, setRankingType] = useState('combined'); // 'personal', 'corporate', 'combined'
+  const [includePrivate, setIncludePrivate] = useState(true); // true = public + private, false = public only
+
+  // Re-sort rankings when filters change
+  useEffect(() => {
+    if (rankings.length > 0) {
+      const sortedRankings = [...rankings].sort((a, b) => getRankingValue(b) - getRankingValue(a));
+      setRankings(sortedRankings);
+    }
+  }, [rankingType, includePrivate]);
 
   const fetchContributionsRanking = async () => {
     setLoading(true);
@@ -44,14 +53,26 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
             }
 
             const personalContributions = personalData?.data?.user?.contributionsCollection?.contributionCalendar?.totalContributions || 0;
+            const personalPrivateContributions = personalData?.data?.user?.contributionsCollection?.restrictedContributionsCount || 0;
+            const personalPublicContributions = personalContributions - personalPrivateContributions;
+
             const corporateContributions = corporateData?.data?.user?.contributionsCollection?.contributionCalendar?.totalContributions || 0;
+            const corporatePrivateContributions = corporateData?.data?.user?.contributionsCollection?.restrictedContributionsCount || 0;
+            const corporatePublicContributions = corporateContributions - corporatePrivateContributions;
 
             return {
               username,
               corporateUser,
-              personalContributions,
-              corporateContributions,
-              totalContributions: personalContributions + corporateContributions,
+              personalContributions: {
+                total: personalContributions,
+                public: personalPublicContributions,
+                private: personalPrivateContributions
+              },
+              corporateContributions: {
+                total: corporateContributions,
+                public: corporatePublicContributions,
+                private: corporatePrivateContributions
+              },
               success: true
             };
           } catch (userError) {
@@ -59,9 +80,16 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
             return {
               username,
               corporateUser: corporateUsers[index],
-              personalContributions: 0,
-              corporateContributions: 0,
-              totalContributions: 0,
+              personalContributions: {
+                total: 0,
+                public: 0,
+                private: 0
+              },
+              corporateContributions: {
+                total: 0,
+                public: 0,
+                private: 0
+              },
               success: false,
               error: userError.message
             };
@@ -69,20 +97,8 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
         })
       );
 
-      // Sort based on ranking type
-      let sortedRankings;
-      switch (rankingType) {
-        case 'personal':
-          sortedRankings = rankingData.sort((a, b) => b.personalContributions - a.personalContributions);
-          break;
-        case 'corporate':
-          sortedRankings = rankingData.sort((a, b) => b.corporateContributions - a.corporateContributions);
-          break;
-        case 'combined':
-        default:
-          sortedRankings = rankingData.sort((a, b) => b.totalContributions - a.totalContributions);
-          break;
-      }
+      // Sort based on ranking type and privacy filter
+      const sortedRankings = rankingData.sort((a, b) => getRankingValue(b) - getRankingValue(a));
 
       setRankings(sortedRankings);
     } catch (err) {
@@ -94,14 +110,20 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
   };
 
   const getRankingValue = (user) => {
+    const getContributionCount = (contributions) => {
+      return includePrivate ? contributions.total : contributions.public;
+    };
+
     switch (rankingType) {
       case 'personal':
-        return user.personalContributions;
+        return getContributionCount(user.personalContributions || { total: 0, public: 0 });
       case 'corporate':
-        return user.corporateContributions;
+        return getContributionCount(user.corporateContributions || { total: 0, public: 0 });
       case 'combined':
       default:
-        return user.totalContributions;
+        const personalCount = getContributionCount(user.personalContributions || { total: 0, public: 0 });
+        const corporateCount = getContributionCount(user.corporateContributions || { total: 0, public: 0 });
+        return personalCount + corporateCount;
     }
   };
 
@@ -150,7 +172,7 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
           </div>
           
           <div className="flex items-center space-x-2">
-            <label className="text-sm font-medium">Type:</label>
+            <label className="text-sm font-medium text-white">Type:</label>
             <select
               value={rankingType}
               onChange={(e) => setRankingType(e.target.value)}
@@ -159,6 +181,18 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
               <option value="combined">Combined</option>
               <option value="personal">Personal</option>
               <option value="corporate">Corporate</option>
+            </select>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <label className="text-sm font-medium text-white">Commits:</label>
+            <select
+              value={includePrivate ? 'all' : 'public'}
+              onChange={(e) => setIncludePrivate(e.target.value === 'all')}
+              className="px-3 py-1 border rounded-md bg-[#0f172a] border-[#334155] text-white"
+            >
+              <option value="all">Public + Private</option>
+              <option value="public">Public Only</option>
             </select>
           </div>
           
@@ -196,7 +230,7 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
       {rankings.length > 0 && (
         <div className="space-y-4">
           <div className="text-sm text-gray-400 mb-4">
-            Showing {rankingType} contributions for {selectedYear} ({rankings.filter(r => r.success).length}/{rankings.length} users loaded successfully)
+            Showing {rankingType} {includePrivate ? 'public + private' : 'public only'} contributions for {selectedYear} ({rankings.filter(r => r.success).length}/{rankings.length} users loaded successfully)
           </div>
 
           {/* Summary Stats */}
@@ -206,12 +240,15 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
               <p className="text-2xl font-bold text-blue-400">
                 {rankings.reduce((sum, user) => sum + getRankingValue(user), 0).toLocaleString()}
               </p>
+              <p className="text-xs text-blue-300 mt-1">
+                {includePrivate ? 'Public + Private' : 'Public Only'}
+              </p>
             </div>
             
             <div className="bg-green-900/20 p-4 rounded-lg">
               <h4 className="font-medium text-green-200">Average per User</h4>
               <p className="text-2xl font-bold text-green-400">
-                {Math.round(rankings.reduce((sum, user) => sum + getRankingValue(user), 0) / rankings.length).toLocaleString()}
+                {rankings.length > 0 ? Math.round(rankings.reduce((sum, user) => sum + getRankingValue(user), 0) / rankings.length).toLocaleString() : 0}
               </p>
             </div>
             
@@ -221,7 +258,7 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
                 {rankings[0]?.username || 'N/A'}
               </p>
               <p className="text-sm text-purple-400">
-                {getRankingValue(rankings[0] || {}).toLocaleString()} commits
+                {rankings[0] ? getRankingValue(rankings[0]).toLocaleString() : 0} commits
               </p>
             </div>
           </div>
@@ -280,8 +317,36 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
                   {/* Detailed Breakdown */}
                   {rankingType === 'combined' && (
                     <div className="flex justify-between text-sm text-gray-400">
-                      <span>Personal: {user.personalContributions.toLocaleString()}</span>
-                      <span>Corporate: {user.corporateContributions.toLocaleString()}</span>
+                      <span>
+                        Personal: {includePrivate 
+                          ? user.personalContributions?.total?.toLocaleString() || '0'
+                          : user.personalContributions?.public?.toLocaleString() || '0'
+                        }
+                      </span>
+                      <span>
+                        Corporate: {includePrivate 
+                          ? user.corporateContributions?.total?.toLocaleString() || '0'
+                          : user.corporateContributions?.public?.toLocaleString() || '0'
+                        }
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Privacy Breakdown */}
+                  {includePrivate && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      {rankingType === 'personal' && (
+                        <span>Public: {user.personalContributions?.public?.toLocaleString() || '0'} | Private: {user.personalContributions?.private?.toLocaleString() || '0'}</span>
+                      )}
+                      {rankingType === 'corporate' && (
+                        <span>Public: {user.corporateContributions?.public?.toLocaleString() || '0'} | Private: {user.corporateContributions?.private?.toLocaleString() || '0'}</span>
+                      )}
+                      {rankingType === 'combined' && (
+                        <span>
+                          Total Public: {((user.personalContributions?.public || 0) + (user.corporateContributions?.public || 0)).toLocaleString()} | 
+                          Total Private: {((user.personalContributions?.private || 0) + (user.corporateContributions?.private || 0)).toLocaleString()}
+                        </span>
+                      )}
                     </div>
                   )}
 
