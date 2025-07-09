@@ -56,6 +56,7 @@ function AppContent() {
   const [editingPost, setEditingPost] = useState(null);
   const [editorVisible, setEditorVisible] = useState(false);
   const [showTeamReport, setShowTeamReport] = useState(false);
+  const [showRankings, setShowRankings] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Function to get repositories worked on in the last week
@@ -271,6 +272,7 @@ function AppContent() {
               users={GITHUB_USERS}
               selectedUser={selectedUser}
               onToggleTeamReport={() => setShowTeamReport(true)}
+              onToggleRankings={() => setShowRankings(true)}
               onNewPost={handleNewPost}
             />
             <button
@@ -278,6 +280,15 @@ function AppContent() {
               className="px-4 py-2 bg-[#1e293b] text-[#4ade80] border border-[#22c55e] rounded-md hover:bg-[#334155] transition-colors duration-200"
             >
               Team Report
+            </button>
+            <button
+              onClick={() => setShowRankings(true)}
+              className="px-4 py-2 bg-[#1e293b] text-[#fbbf24] border border-[#f59e0b] rounded-md hover:bg-[#334155] transition-colors duration-200 flex items-center space-x-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>Rankings</span>
             </button>
             <UserSelector
               users={GITHUB_USERS}
@@ -373,12 +384,6 @@ function AppContent() {
               }}
             />
             
-            {/* GitHub Contributions Ranking */}
-            <GitHubRanking 
-              users={GITHUB_USERS}
-              corporateUsers={CORPORATE_USERS}
-            />
-            
             <div className="mt-8 flex justify-end">
               <MarkdownEditor
                 key={editingPost ? `edit-${editingPost.title}` : 'create-new'}
@@ -399,6 +404,29 @@ function AppContent() {
           corporateUsers={CORPORATE_USERS}
           onClose={() => setShowTeamReport(false)}
         />
+      )}
+
+      {showRankings && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-[#1e293b] border border-[#334155] rounded-lg p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">GitHub Contributions Rankings</h2>
+              <button
+                onClick={() => setShowRankings(false)}
+                className="text-gray-400 hover:text-white"
+                aria-label="Close"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <GitHubRanking 
+              users={GITHUB_USERS}
+              corporateUsers={CORPORATE_USERS}
+            />
+          </div>
+        </div>
       )}
 
       {/* X9 Chat Component */}

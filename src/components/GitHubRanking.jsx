@@ -132,16 +132,16 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
   };
 
   return (
-    <div className="p-6 border rounded-lg shadow-sm bg-white dark:bg-gray-800">
+    <div className="space-y-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold">GitHub Contributions Ranking</h3>
+        <h3 className="text-lg font-semibold text-white">Team Contributions</h3>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <label className="text-sm font-medium">Year:</label>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="px-3 py-1 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+              className="px-3 py-1 border rounded-md bg-[#0f172a] border-[#334155] text-white"
             >
               {[2025, 2024, 2023, 2022].map(year => (
                 <option key={year} value={year}>{year}</option>
@@ -154,7 +154,7 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
             <select
               value={rankingType}
               onChange={(e) => setRankingType(e.target.value)}
-              className="px-3 py-1 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+              className="px-3 py-1 border rounded-md bg-[#0f172a] border-[#334155] text-white"
             >
               <option value="combined">Combined</option>
               <option value="personal">Personal</option>
@@ -188,39 +188,39 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
       </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <p className="text-red-600 dark:text-red-400">{error}</p>
+        <div className="mb-4 p-4 bg-red-900/20 border border-red-800 rounded-lg">
+          <p className="text-red-400">{error}</p>
         </div>
       )}
 
       {rankings.length > 0 && (
         <div className="space-y-4">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          <div className="text-sm text-gray-400 mb-4">
             Showing {rankingType} contributions for {selectedYear} ({rankings.filter(r => r.success).length}/{rankings.length} users loaded successfully)
           </div>
 
           {/* Summary Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-              <h4 className="font-medium text-blue-800 dark:text-blue-200">Total Commits</h4>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            <div className="bg-blue-900/20 p-4 rounded-lg">
+              <h4 className="font-medium text-blue-200">Total Commits</h4>
+              <p className="text-2xl font-bold text-blue-400">
                 {rankings.reduce((sum, user) => sum + getRankingValue(user), 0).toLocaleString()}
               </p>
             </div>
             
-            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-              <h4 className="font-medium text-green-800 dark:text-green-200">Average per User</h4>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+            <div className="bg-green-900/20 p-4 rounded-lg">
+              <h4 className="font-medium text-green-200">Average per User</h4>
+              <p className="text-2xl font-bold text-green-400">
                 {Math.round(rankings.reduce((sum, user) => sum + getRankingValue(user), 0) / rankings.length).toLocaleString()}
               </p>
             </div>
             
-            <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
-              <h4 className="font-medium text-purple-800 dark:text-purple-200">Top Performer</h4>
-              <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+            <div className="bg-purple-900/20 p-4 rounded-lg">
+              <h4 className="font-medium text-purple-200">Top Performer</h4>
+              <p className="text-lg font-bold text-purple-400">
                 {rankings[0]?.username || 'N/A'}
               </p>
-              <p className="text-sm text-purple-600 dark:text-purple-400">
+              <p className="text-sm text-purple-400">
                 {getRankingValue(rankings[0] || {}).toLocaleString()} commits
               </p>
             </div>
@@ -238,8 +238,8 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
                   key={user.username}
                   className={`p-4 rounded-lg border transition-all duration-200 ${
                     index < 3 
-                      ? 'bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10 border-yellow-200 dark:border-yellow-800' 
-                      : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+                      ? 'bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border-yellow-600' 
+                      : 'bg-[#0f172a] border-[#334155]'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -248,9 +248,9 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
                         {getRankingIcon(index)}
                       </div>
                       <div>
-                        <h4 className="font-semibold text-lg">{user.username}</h4>
+                        <h4 className="font-semibold text-lg text-white">{user.username}</h4>
                         {user.corporateUser && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                          <p className="text-sm text-gray-400">
                             Corporate: {user.corporateUser}
                           </p>
                         )}
@@ -261,7 +261,7 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
                       <div className="text-2xl font-bold">
                         {userValue.toLocaleString()}
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                      <div className="text-sm text-gray-400">
                         commits
                       </div>
                     </div>
@@ -269,7 +269,7 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
 
                   {/* Progress Bar */}
                   <div className="mb-3">
-                    <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
+                    <div className="w-full bg-gray-700 rounded-full h-3">
                       <div 
                         className={`h-3 rounded-full transition-all duration-1000 ease-out ${getProgressBarColor(index)}`}
                         style={{ width: `${percentage}%` }}
@@ -279,14 +279,14 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
 
                   {/* Detailed Breakdown */}
                   {rankingType === 'combined' && (
-                    <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                    <div className="flex justify-between text-sm text-gray-400">
                       <span>Personal: {user.personalContributions.toLocaleString()}</span>
                       <span>Corporate: {user.corporateContributions.toLocaleString()}</span>
                     </div>
                   )}
 
                   {!user.success && (
-                    <div className="mt-2 text-sm text-red-600 dark:text-red-400">
+                    <div className="mt-2 text-sm text-red-400">
                       ⚠️ Failed to load: {user.error}
                     </div>
                   )}
@@ -299,7 +299,7 @@ const GitHubRanking = ({ users = [], corporateUsers = [] }) => {
 
       {rankings.length === 0 && !loading && (
         <div className="text-center py-8">
-          <div className="text-gray-500 dark:text-gray-400 mb-4">
+          <div className="text-gray-400 mb-4">
             <svg className="mx-auto h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>

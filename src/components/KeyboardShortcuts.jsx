@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-function KeyboardShortcuts({ onUserSelect, users, selectedUser, onToggleTeamReport, onNewPost }) {
+function KeyboardShortcuts({ onUserSelect, users, selectedUser, onToggleTeamReport, onToggleRankings, onNewPost }) {
   const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
@@ -36,6 +36,12 @@ function KeyboardShortcuts({ onUserSelect, users, selectedUser, onToggleTeamRepo
             onToggleTeamReport?.();
           }
           break;
+        case 'r':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            onToggleRankings?.();
+          }
+          break;
         case 'Escape':
           setShowHelp(false);
           break;
@@ -58,7 +64,7 @@ function KeyboardShortcuts({ onUserSelect, users, selectedUser, onToggleTeamRepo
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectedUser, users, onUserSelect, onToggleTeamReport, onNewPost]);
+  }, [selectedUser, users, onUserSelect, onToggleTeamReport, onToggleRankings, onNewPost]);
 
   return (
     <>
@@ -121,6 +127,10 @@ function KeyboardShortcuts({ onUserSelect, users, selectedUser, onToggleTeamRepo
                     <div className="flex justify-between">
                       <span className="text-gray-300">Ctrl+T</span>
                       <span className="text-gray-500">Team report</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Ctrl+R</span>
+                      <span className="text-gray-500">Rankings</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-300">?</span>
