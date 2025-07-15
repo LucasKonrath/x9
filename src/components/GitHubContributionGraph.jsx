@@ -85,7 +85,10 @@ function GitHubContributionGraph({ username, corporateUser, minimal = false }) {
 
   const handleSquareHover = (event, date, count) => {
     const rect = event.currentTarget.getBoundingClientRect();
-    const localDate = new Date(date);
+    // Parse the date string directly without timezone conversion
+    // GitHub API returns dates in YYYY-MM-DD format
+    const [year, month, day] = date.split('-').map(Number);
+    const localDate = new Date(year, month - 1, day); // month is 0-indexed
     
     setTooltipContent(`${count} contributions on ${format(localDate, 'MMM d, yyyy')}`);
     setTooltipPosition({

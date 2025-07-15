@@ -143,7 +143,10 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
   const trendData = calculateTrend(weeks);
 
   const formatTooltip = (date: string, count: number) => {
-    const localDate = new Date(date);
+    // Parse the date string directly without timezone conversion
+    // GitHub API returns dates in YYYY-MM-DD format
+    const [year, month, day] = date.split('-').map(Number);
+    const localDate = new Date(year, month - 1, day); // month is 0-indexed
     const formattedDate = format(localDate, 'MMMM d, yyyy');
     const commitText = count === 1 ? 'commit' : 'commits';
     return `${count} ${commitText} on ${formattedDate}`;
