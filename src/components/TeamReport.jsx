@@ -82,78 +82,326 @@ function TeamReport({ users, corporateUsers, onClose }) {
     }
   };
 
+  const generateMarkdown = async () => {
+    try {
+      const currentDate = format(new Date(), 'MMMM d, yyyy');
+      const currentYear = new Date().getFullYear();
+      
+      // Calculate summary stats
+      const totalPersonalCommits = teamData.reduce((sum, user) => sum + user.personal2025Contributions, 0);
+      const totalCorporateCommits = teamData.reduce((sum, user) => sum + user.corporate2025Contributions, 0);
+      
+      let markdown = `# Team Activity Report
+
+**Generated on:** ${currentDate}
+
+## Summary
+
+- **Team Members:** ${teamData.length}
+- **Total Personal Commits (${currentYear}):** ${totalPersonalCommits.toLocaleString()}
+- **Total Corporate Commits (${currentYear}):** ${totalCorporateCommits.toLocaleString()}
+- **Combined Total:** ${(totalPersonalCommits + totalCorporateCommits).toLocaleString()}
+
+---
+
+## Individual Team Member Reports
+
+`;
+
+      // Create a JSZip instance to bundle images with markdown
+      const JSZip = (await import('jszip')).default;
+      const zip = new JSZip();
+      
+      // Add each team member's data
+      for (const userData of teamData) {
+        markdown += `### ${userData.username}
+
+**GitHub Activity (${currentYear}):**
+- Personal Commits: ${userData.personal2025Contributions.toLocaleString()}
+- Corporate Commits: ${userData.corporate2025Contributions.toLocaleString()}
+- **Total:** ${(userData.personal2025Contributions + userData.corporate2025Contributions).toLocaleString()}
+
+`;
+
+        // Capture personal contribution graph
+        try {
+          const personalGraphElement = document.querySelector(`[data-username="${userData.username}"][data-type="personal"]`);
+          if (personalGraphElement) {
+            const personalCanvas = await html2canvas(personalGraphElement, {
+              backgroundColor: '#0f172a',
+              scale: 2,
+              logging: false
+            });
+            const personalImageData = personalCanvas.toDataURL('image/png');
+            const personalImageName = `${userData.username}-personal-contributions.png`;
+            
+            // Convert base64 to blob and add to zip
+            const personalImageBlob = await fetch(personalImageData).then(res => res.blob());
+            zip.file(personalImageName, personalImageBlob);
+            
+            markdown += `**Personal Contributions:**
+![${userData.username} Personal Contributions](${personalImageName})
+
+`;
+          }
+        } catch (err) {
+          console.warn(`Failed to capture personal contribution graph for ${userData.username}:`, err);
+          markdown += `**Personal Contributions:** _(Screenshot unavailable)_
+
+`;
+        }
+
+        // Capture corporate contribution graph
+        try {
+          const corporateGraphElement = document.querySelector(`[data-username="${userData.corporateUser}"][data-type="corporate"]`);
+          if (corporateGraphElement) {
+            const corporateCanvas = await html2canvas(corporateGraphElement, {
+              backgroundColor: '#0f172a',
+              scale: 2,
+              logging: false
+            });
+            const corporateImageData = corporateCanvas.toDataURL('image/png');
+            const corporateImageName = `${userData.username}-corporate-contributions.png`;
+            
+            // Convert base64 to blob and add to zip
+            const corporateImageBlob = await fetch(corporateImageData).then(res => res.blob());
+            zip.file(corporateImageName, corporateImageBlob);
+            
+            markdown += `**Corporate Contributions:**
+![${userData.username} Corporate Contributions](${corporateImageName})
+
+`;
+          }
+        } catch (err) {
+          console.warn(`Failed to capture corporate contribution graph for ${userData.username}:`, err);
+          markdown += `**Corporate Contributions:** _(Screenshot unavailable)_
+
+`;
+        }
+
+        // Add latest meeting notes if available
+        if (userData.latestNote) {
+          markdown += `**Latest Meeting Notes** (${userData.latestNote.date}):
+
+${userData.latestNote.content}
+
+`;
+        }
+
+        // Add reinforcements if available
+        if (userData.reinforcements && userData.reinforcements.reinforcements && userData.reinforcements.reinforcements.length > 0) {
+          markdown += `**Current Reinforcements** (Updated: ${userData.reinforcements.lastUpdated}):
+
+`;
+          userData.reinforcements.reinforcements.forEach((reinforcement, idx) => {
+            markdown += `${idx + 1}. **${reinforcement.category}** (${reinforcement.priority} priority, ${reinforcement.status.replace('_', ' ')})
+   - ${reinforcement.description}
+`;
+            if (reinforcement.notes) {
+              markdown += `   - Notes: ${reinforcement.notes}
+`;
+            }
+          });
+          markdown += `
+`;
+        }
+
+        // Add reading progress if available
+        if (userData.readingData) {
+          markdown += `**Reading Progress:**
+- Goal: ${userData.readingData.readingGoals.completed}/${userData.readingData.readingGoals.yearly} books (${Math.round((userData.readingData.readingGoals.completed / userData.readingData.readingGoals.yearly) * 100)}% complete)
+`;
+          
+          if (userData.readingData.currentlyReading) {
+            markdown += `- Currently Reading: "${userData.readingData.currentlyReading.title}" by ${userData.readingData.currentlyReading.author} (${userData.readingData.currentlyReading.progress}% complete)
+`;
+          }
+          
+          if (userData.readingData.booksRead && userData.readingData.booksRead.length > 0) {
+            markdown += `- Recent Books Completed:
+`;
+            userData.readingData.booksRead.slice(0, 3).forEach((book) => {
+              markdown += `  - "${book.title}" by ${book.author} (${book.rating}/5 ⭐, completed ${book.completedDate})
+`;
+            });
+          }
+          markdown += `
+`;
+        }
+
+        markdown += `---
+
+`;
+      }
+
+      // Add footer
+      markdown += `## Report Details
+
+This report was automatically generated from the X9 Team Dashboard on ${currentDate}.
+
+**Data Sources:**
+- GitHub personal and corporate contribution data
+- Meeting notes and documentation
+- Performance reinforcements and feedback
+- Reading progress and goals
+
+For more detailed analytics and visualizations, access the full dashboard.`;
+
+      // Add markdown file to zip
+      zip.file(`team-activity-report-${format(new Date(), 'yyyy-MM-dd-HHmm')}.md`, markdown);
+      
+      // Generate and download the zip file
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `team-activity-report-${format(new Date(), 'yyyy-MM-dd-HHmm')}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('Error generating Markdown:', error);
+      alert('Failed to generate Markdown report. Please try again.');
+    }
+  };
+
   useEffect(() => {
     const fetchTeamData = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const userData = await Promise.all(users.map(async (username, index) => {
-          // Get corresponding corporate username
-          const corporateUser = corporateUsers[index];
-          
-          // Fetch personal contributions
-          const now = new Date();
-          const fromDate = new Date(now);
-          fromDate.setFullYear(fromDate.getFullYear() - 1);
-
-          const personalData = await fetchGraphQL(contributionsQuery, {
-            username,
-            from: fromDate.toISOString(),
-            to: now.toISOString()
-          }, true);
-
-          // Fetch corporate contributions
-          const corporateData = await fetchGraphQL(contributionsQuery, {
-            username: corporateUser,
-            from: '2025-01-01T00:00:00Z',
-            to: now.toISOString()
-          }, false);
-
-          // Fetch latest meeting notes
-          const markdownPosts = await fetchMarkdownPosts(username);
-          const latestNote = markdownPosts.length > 0 ? markdownPosts[0] : null;
-
-          // Fetch reinforcement data
-          let reinforcements = null;
+        const userDataResults = await Promise.allSettled(users.map(async (username, index) => {
           try {
-            const reinforcementResponse = await fetch(`http://localhost:3001/api/users/${username}/reinforcements`);
-            if (reinforcementResponse.ok) {
-              reinforcements = await reinforcementResponse.json();
+            // Get corresponding corporate username
+            const corporateUser = corporateUsers[index];
+            
+            // Fetch personal contributions
+            const now = new Date();
+            const fromDate = new Date(now);
+            fromDate.setFullYear(fromDate.getFullYear() - 1);
+
+            let personalData;
+            try {
+              personalData = await fetchGraphQL(contributionsQuery, {
+                username,
+                from: fromDate.toISOString(),
+                to: now.toISOString()
+              }, true);
+            } catch (err) {
+              console.warn(`Failed to fetch personal contributions for ${username}:`, err);
+              // Provide fallback data structure
+              personalData = {
+                data: {
+                  user: {
+                    contributionsCollection: {
+                      contributionCalendar: {
+                        weeks: []
+                      }
+                    }
+                  }
+                }
+              };
             }
-          } catch (err) {
-            console.warn(`Failed to fetch reinforcements for ${username}:`, err);
-          }
 
-          // Fetch reading data
-          let readingData = null;
-          try {
-            const readingResponse = await fetch(`http://localhost:3001/api/users/${username}/reading`);
-            if (readingResponse.ok) {
-              readingData = await readingResponse.json();
+            // Fetch corporate contributions
+            let corporateData;
+            try {
+              corporateData = await fetchGraphQL(contributionsQuery, {
+                username: corporateUser,
+                from: '2025-01-01T00:00:00Z',
+                to: now.toISOString()
+              }, false);
+            } catch (err) {
+              console.warn(`Failed to fetch corporate contributions for ${corporateUser}:`, err);
+              // Provide fallback data structure
+              corporateData = {
+                data: {
+                  user: {
+                    contributionsCollection: {
+                      contributionCalendar: {
+                        weeks: []
+                      }
+                    }
+                  }
+                }
+              };
             }
+
+            // Fetch latest meeting notes
+            let latestNote = null;
+            try {
+              const markdownPosts = await fetchMarkdownPosts(username);
+              latestNote = markdownPosts.length > 0 ? markdownPosts[0] : null;
+            } catch (err) {
+              console.warn(`Failed to fetch meeting notes for ${username}:`, err);
+            }
+
+            // Fetch reinforcement data
+            let reinforcements = null;
+            try {
+              const reinforcementResponse = await fetch(`http://localhost:3001/api/users/${username}/reinforcements`);
+              if (reinforcementResponse.ok) {
+                reinforcements = await reinforcementResponse.json();
+              }
+            } catch (err) {
+              console.warn(`Failed to fetch reinforcements for ${username}:`, err);
+            }
+
+            // Fetch reading data
+            let readingData = null;
+            try {
+              const readingResponse = await fetch(`http://localhost:3001/api/users/${username}/reading`);
+              if (readingResponse.ok) {
+                readingData = await readingResponse.json();
+              }
+            } catch (err) {
+              console.warn(`Failed to fetch reading data for ${username}:`, err);
+            }
+
+            // Calculate 2025 contributions with safe fallbacks
+            const personal2025Contributions = personalData?.data?.user?.contributionsCollection?.contributionCalendar?.weeks
+              ? personalData.data.user.contributionsCollection.contributionCalendar.weeks
+                  .reduce((sum, week) => sum + week.contributionDays
+                    .reduce((daySum, day) => daySum + (day.date.startsWith('2025') ? day.contributionCount : 0), 0), 0)
+              : 0;
+
+            const corporate2025Contributions = corporateData?.data?.user?.contributionsCollection?.contributionCalendar?.weeks
+              ? corporateData.data.user.contributionsCollection.contributionCalendar.weeks
+                  .reduce((sum, week) => sum + week.contributionDays
+                    .reduce((daySum, day) => daySum + (day.date.startsWith('2025') ? day.contributionCount : 0), 0), 0)
+              : 0;
+
+            return {
+              username,
+              corporateUser,
+              personal2025Contributions,
+              corporate2025Contributions,
+              latestNote,
+              reinforcements,
+              readingData
+            };
           } catch (err) {
-            console.warn(`Failed to fetch reading data for ${username}:`, err);
+            console.error(`Failed to fetch data for user ${username}:`, err);
+            // Return a minimal user object so the report can still be generated
+            return {
+              username,
+              corporateUser: corporateUsers[index] || 'unknown',
+              personal2025Contributions: 0,
+              corporate2025Contributions: 0,
+              latestNote: null,
+              reinforcements: null,
+              readingData: null,
+              error: err.message
+            };
           }
-
-          // Calculate 2025 contributions
-          const personal2025Contributions = personalData.data.user.contributionsCollection.contributionCalendar.weeks
-            .reduce((sum, week) => sum + week.contributionDays
-              .reduce((daySum, day) => daySum + (day.date.startsWith('2025') ? day.contributionCount : 0), 0), 0);
-
-          const corporate2025Contributions = corporateData.data.user.contributionsCollection.contributionCalendar.weeks
-            .reduce((sum, week) => sum + week.contributionDays
-              .reduce((daySum, day) => daySum + (day.date.startsWith('2025') ? day.contributionCount : 0), 0), 0);
-
-          return {
-            username,
-            corporateUser,
-            personal2025Contributions,
-            corporate2025Contributions,
-            latestNote,
-            reinforcements,
-            readingData
-          };
         }));
+
+        // Filter out rejected promises and extract successful data
+        const userData = userDataResults
+          .filter(result => result.status === 'fulfilled')
+          .map(result => result.value);
 
         setTeamData(userData);
       } catch (err) {
@@ -191,6 +439,16 @@ function TeamReport({ users, corporateUsers, onClose }) {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-white">Team Activity Report</h2>
           <div className="flex items-center gap-3">
+            <button
+              onClick={generateMarkdown}
+              disabled={isLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-[#3b82f6] text-white rounded hover:bg-[#60a5fa] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Download Markdown
+            </button>
             <button
               onClick={generatePDF}
               disabled={isGeneratingPDF || isLoading}
@@ -242,15 +500,41 @@ function TeamReport({ users, corporateUsers, onClose }) {
               borderRadius: '8px'
             }}
           >
+            {/* Warning message if some users had data loading issues */}
+            {teamData.some(user => user.error) && (
+              <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4 mb-6">
+                <div className="flex items-center gap-2">
+                  <svg className="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <h4 className="text-yellow-400 font-medium">Data Loading Issues</h4>
+                </div>
+                <p className="text-yellow-200 text-sm mt-2">
+                  Some team members have incomplete data due to API errors. The report shows available data only.
+                  Users with issues: {teamData.filter(user => user.error).map(user => user.username).join(', ')}
+                </p>
+              </div>
+            )}
+
             {teamData.map((userData) => (
               <div
                 key={userData.username}
                 className="bg-[#0f172a] border border-[#334155] rounded-lg p-4"
               >
                 <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-semibold text-white">
-                    {userData.username}
-                  </h3>
+                  <div>
+                    <h3 className="text-xl font-semibold text-white">
+                      {userData.username}
+                    </h3>
+                    {userData.error && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <svg className="h-4 w-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        <span className="text-sm text-yellow-400">Some data failed to load</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex gap-4">
                     <div className="text-right">
                       <p className="text-sm text-gray-400">Personal Commits (2025)</p>
@@ -270,17 +554,21 @@ function TeamReport({ users, corporateUsers, onClose }) {
                 <div className="flex flex-col gap-4 mb-4">
                   <div className="w-full">
                     <p className="text-sm text-gray-400 mb-2">Personal Contributions</p>
-                    <GitHubContributionGraph 
-                      username={userData.username} 
-                      minimal={false} 
-                    />
+                    <div data-username={userData.username} data-type="personal">
+                      <GitHubContributionGraph 
+                        username={userData.username} 
+                        minimal={false} 
+                      />
+                    </div>
                   </div>
                   <div className="w-full">
                     <p className="text-sm text-gray-400 mb-2">Corporate Contributions</p>
-                    <CorporateContributionHeatmap 
-                      corporateUser={userData.corporateUser}
-                      minimal={false} 
-                    />
+                    <div data-username={userData.corporateUser} data-type="corporate">
+                      <CorporateContributionHeatmap 
+                        corporateUser={userData.corporateUser}
+                        minimal={false} 
+                      />
+                    </div>
                   </div>
                 </div>
 
