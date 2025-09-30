@@ -360,6 +360,17 @@ For more detailed analytics and visualizations, access the full dashboard.`;
               console.warn(`Failed to fetch reading data for ${username}:`, err);
             }
 
+            // Fetch presentation data
+            let presentationData = null;
+            try {
+              const presentationResponse = await fetch(`http://localhost:3001/api/users/${username}/presentations`);
+              if (presentationResponse.ok) {
+                presentationData = await presentationResponse.json();
+              }
+            } catch (err) {
+              console.warn(`Failed to fetch presentation data for ${username}:`, err);
+            }
+
             // Calculate 2025 contributions with safe fallbacks
             const personal2025Contributions = personalData?.data?.user?.contributionsCollection?.contributionCalendar?.weeks
               ? personalData.data.user.contributionsCollection.contributionCalendar.weeks
@@ -380,7 +391,8 @@ For more detailed analytics and visualizations, access the full dashboard.`;
               corporate2025Contributions,
               latestNote,
               reinforcements,
-              readingData
+              readingData,
+              presentationData
             };
           } catch (err) {
             console.error(`Failed to fetch data for user ${username}:`, err);
@@ -393,6 +405,7 @@ For more detailed analytics and visualizations, access the full dashboard.`;
               latestNote: null,
               reinforcements: null,
               readingData: null,
+              presentationData: null,
               error: err.message
             };
           }
@@ -719,6 +732,83 @@ For more detailed analytics and visualizations, access the full dashboard.`;
                               </div>
                             </div>
                           </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Presentations Section */}
+                {userData.presentationData && userData.presentationData.presentations && userData.presentationData.presentations.length > 0 && (
+                  <div className="bg-gray-700 rounded-lg p-4 mt-4">
+                    <h4 className="text-sm font-semibold text-white mb-3 flex items-center">
+                      <span className="mr-2">🎤</span>
+                      Upcoming Presentations
+                    </h4>
+                    
+                    <div className="space-y-3">
+                      {userData.presentationData.presentations
+                        .filter(presentation => new Date(presentation.date) >= new Date())
+                        .slice(0, 3)
+                        .map((presentation) => {
+                          const daysUntil = Math.ceil((new Date(presentation.date) - new Date()) / (1000 * 60 * 60 * 24));
+                          const isUrgent = daysUntil <= 7;
+                          const priorityColor = presentation.priority === 'high' ? 'text-red-400' : 
+                                              presentation.priority === 'medium' ? 'text-yellow-400' : 'text-green-400';
+                          const prepIcon = presentation.preparationStatus === 'completed' ? '✅' :
+                                         presentation.preparationStatus === 'in-progress' ? '🔄' : '⏳';
+                          
+                          return (
+                            <div key={presentation.id} className={`p-3 rounded border-l-4 ${
+                              presentation.priority === 'high' ? 'border-l-red-500 bg-red-900/20' :
+                              presentation.priority === 'medium' ? 'border-l-yellow-500 bg-yellow-900/20' :
+                              'border-l-green-500 bg-green-900/20'
+                            }`}>
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="flex-1">
+                                  <h5 className="text-sm font-medium text-white">{presentation.title}</h5>
+                                  {presentation.description && (
+                                    <p className="text-xs text-gray-400 mt-1">{presentation.description}</p>
+                                  )}
+                                </div>
+                                <div className="flex items-center space-x-2 ml-3">
+                                  <span className={`text-xs font-medium ${priorityColor}`}>
+                                    {presentation.priority.toUpperCase()}
+                                  </span>
+                                  <span className="text-xs">{prepIcon}</span>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between text-xs text-gray-400">
+                                <div className="flex items-center space-x-3">
+                                  <span>📅 {new Date(presentation.date).toLocaleDateString()}</span>
+                                  {presentation.time && <span>🕐 {presentation.time}</span>}
+                                  {presentation.location && <span>📍 {presentation.location}</span>}
+                                </div>
+                                <div className={`font-medium ${isUrgent ? 'text-red-400' : 'text-gray-400'}`}>
+                                  {daysUntil === 0 ? 'Today' : 
+                                   daysUntil === 1 ? 'Tomorrow' : 
+                                   `${daysUntil} days`}
+                                </div>
+                              </div>
+                              
+                              {presentation.audience && presentation.audience.length > 0 && (
+                                <div className="mt-2">
+                                  <span className="text-xs text-gray-500">Audience: </span>
+                                  <span className="text-xs text-gray-300">
+                                    {Array.isArray(presentation.audience) ? presentation.audience.join(', ') : presentation.audience}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      
+                      {userData.presentationData.presentations.filter(p => new Date(p.date) >= new Date()).length > 3 && (
+                        <div className="text-center">
+                          <span className="text-xs text-gray-500">
+                            +{userData.presentationData.presentations.filter(p => new Date(p.date) >= new Date()).length - 3} more presentations
+                          </span>
                         </div>
                       )}
                     </div>
