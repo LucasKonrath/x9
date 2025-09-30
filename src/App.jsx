@@ -15,6 +15,8 @@ import SearchComponent from './components/SearchComponent';
 import X9ChatComponent from './components/X9ChatComponent';
 import ReinforcementManager from './components/ReinforcementManager';
 import ReadingManager from './components/ReadingManager';
+import PresentationManager from './components/PresentationManager';
+import PresentationWarnings from './components/PresentationWarnings';
 import GitHubRanking from './components/GitHubRanking';
 import NavBar from './components/NavBar';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
@@ -136,6 +138,11 @@ function AppContent() {
       id: 'reading',
       label: 'Reading',
       icon: '📚'
+    },
+    {
+      id: 'presentations',
+      label: 'Presentations',
+      icon: '🎤'
     }
   ];
 
@@ -362,6 +369,9 @@ function AppContent() {
             {/* GitHub Tab */}
             {activeTab === 'github' && (
               <>
+                {/* Presentation Warnings */}
+                <PresentationWarnings />
+                
                 <GitHubContributionGraph 
                   username={selectedUser}
                 />
@@ -471,6 +481,14 @@ function AppContent() {
                 onReadingChange={(reading) => {
                   console.log('Reading data updated for', selectedUser, reading);
                 }}
+              />
+            )}
+
+            {/* Presentations Tab */}
+            {activeTab === 'presentations' && (
+              <PresentationManager 
+                selectedUser={selectedUser}
+                onUserChange={setSelectedUser}
               />
             )}
           </div>

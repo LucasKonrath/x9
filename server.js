@@ -481,6 +481,181 @@ app.put('/api/users/:username/reading/books/:id', (req, res) => {
   }
 });
 
+// Presentations Management Endpoints
+
+// Get user presentations
+app.get('/api/users/:username/presentations', (req, res) => {
+  const username = req.params.username;
+  const presentationFile = path.join(__dirname, 'public', username, 'presentations.json');
+
+  try {
+    if (!fs.existsSync(presentationFile)) {
+      // Create default presentations file
+      const defaultPresentations = {
+        version: "1.0",
+        lastUpdated: new Date().toISOString().split('T')[0],
+        presentations: []
+      };
+      
+      const userDir = path.join(__dirname, 'public', username);
+      if (!fs.existsSync(userDir)) {
+        fs.mkdirSync(userDir, { recursive: true });
+      }
+      
+      fs.writeFileSync(presentationFile, JSON.stringify(defaultPresentations, null, 2));
+      return res.json(defaultPresentations);
+    }
+
+    const presentations = JSON.parse(fs.readFileSync(presentationFile, 'utf8'));
+    res.json(presentations);
+  } catch (error) {
+    console.error('Error reading presentations:', error);
+    res.status(500).json({ error: 'Error reading presentations' });
+  }
+});
+
+// Add new presentation
+app.post('/api/users/:username/presentations', (req, res) => {
+  const username = req.params.username;
+  const presentationFile = path.join(__dirname, 'public', username, 'presentations.json');
+  const newPresentation = req.body;
+
+  try {
+    let presentations;
+    if (!fs.existsSync(presentationFile)) {
+      presentations = {
+        version: "1.0",
+        lastUpdated: new Date().toISOString().split('T')[0],
+        presentations: []
+      };
+      
+      const userDir = path.join(__dirname, 'public', username);
+      if (!fs.existsSync(userDir)) {
+        fs.mkdirSync(userDir, { recursive: true });
+      }
+    } else {
+      presentations = JSON.parse(fs.readFileSync(presentationFile, 'utf8'));
+    }
+
+    // Generate new ID
+    const maxId = presentations.presentations.reduce((max, pres) => Math.max(max, parseInt(pres.id) || 0), 0);
+    newPresentation.id = (maxId + 1).toString();
+    newPresentation.createdAt = new Date().toISOString();
+    newPresentation.updatedAt = new Date().toISOString();
+    newPresentation.status = newPresentation.status || 'scheduled';
+    newPresentation.preparationStatus = newPresentation.preparationStatus || 'not-started';
+
+    presentations.presentations.push(newPresentation);
+    presentations.lastUpdated = new Date().toISOString().split('T')[0];
+
+    fs.writeFileSync(presentationFile, JSON.stringify(presentations, null, 2));
+    res.json(presentations);
+  } catch (error) {
+    console.error('Error adding presentation:', error);
+    res.status(500).json({ error: 'Error adding presentation' });
+  }
+});
+
+// Update presentation
+app.put('/api/users/:username/presentations/:id', (req, res) => {
+  const username = req.params.username;
+  const presentationId = req.params.id;
+  const updatedPresentation = req.body;
+  const presentationFile = path.join(__dirname, 'public', username, 'presentations.json');
+
+  try {
+    if (!fs.existsSync(presentationFile)) {
+      return res.status(404).json({ error: 'Presentations not found' });
+    }
+
+    const presentations = JSON.parse(fs.readFileSync(presentationFile, 'utf8'));
+    const presentationIndex = presentations.presentations.findIndex(pres => pres.id === presentationId);
+    
+    if (presentationIndex === -1) {
+      return res.status(404).json({ error: 'Presentation not found' });
+    }
+
+    presentations.presentations[presentationIndex] = {
+      ...presentations.presentations[presentationIndex],
+      ...updatedPresentation,
+      id: presentationId, // Keep original ID
+      updatedAt: new Date().toISOString()
+    };
+    presentations.lastUpdated = new Date().toISOString().split('T')[0];
+
+    fs.writeFileSync(presentationFile, JSON.stringify(presentations, null, 2));
+    res.json(presentations);
+  } catch (error) {
+    console.error('Error updating presentation:', error);
+    res.status(500).json({ error: 'Error updating presentation' });
+  }
+});
+
+// Delete presentation
+app.delete('/api/users/:username/presentations/:id', (req, res) => {
+  const username = req.params.username;
+  const presentationId = req.params.id;
+  const presentationFile = path.join(__dirname, 'public', username, 'presentations.json');
+
+  try {
+    if (!fs.existsSync(presentationFile)) {
+      return res.status(404).json({ error: 'Presentations not found' });
+    }
+
+    const presentations = JSON.parse(fs.readFileSync(presentationFile, 'utf8'));
+    const presentationIndex = presentations.presentations.findIndex(pres => pres.id === presentationId);
+    
+    if (presentationIndex === -1) {
+      return res.status(404).json({ error: 'Presentation not found' });
+    }
+
+    presentations.presentations.splice(presentationIndex, 1);
+    presentations.lastUpdated = new Date().toISOString().split('T')[0];
+
+    fs.writeFileSync(presentationFile, JSON.stringify(presentations, null, 2));
+    res.json(presentations);
+  } catch (error) {
+    console.error('Error deleting presentation:', error);
+    res.status(500).json({ error: 'Error deleting presentation' });
+  }
+});
+
+// Get all presentations across all users (for dashboard warnings)
+app.get('/api/presentations/all', (req, res) => {
+  const publicDir = path.join(__dirname, 'public');
+  
+  try {
+    const users = fs.readdirSync(publicDir).filter(item => {
+      const itemPath = path.join(publicDir, item);
+      return fs.statSync(itemPath).isDirectory() && !item.startsWith('.');
+    });
+    
+    const allPresentations = [];
+    
+    users.forEach(username => {
+      const presentationFile = path.join(publicDir, username, 'presentations.json');
+      if (fs.existsSync(presentationFile)) {
+        try {
+          const userPresentations = JSON.parse(fs.readFileSync(presentationFile, 'utf8'));
+          userPresentations.presentations.forEach(presentation => {
+            allPresentations.push({
+              ...presentation,
+              username: username
+            });
+          });
+        } catch (err) {
+          console.warn(`Error reading presentations for ${username}:`, err);
+        }
+      }
+    });
+    
+    res.json(allPresentations);
+  } catch (error) {
+    console.error('Error reading all presentations:', error);
+    res.status(500).json({ error: 'Error reading presentations' });
+  }
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
