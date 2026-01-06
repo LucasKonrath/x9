@@ -88,8 +88,8 @@ function TeamReport({ users, corporateUsers, onClose }) {
       const currentYear = new Date().getFullYear();
       
       // Calculate summary stats
-      const totalPersonalCommits = teamData.reduce((sum, user) => sum + user.personal2025Contributions, 0);
-      const totalCorporateCommits = teamData.reduce((sum, user) => sum + user.corporate2025Contributions, 0);
+      const totalPersonalCommits = teamData.reduce((sum, user) => sum + user.personalYearContributions, 0);
+      const totalCorporateCommits = teamData.reduce((sum, user) => sum + user.corporateYearContributions, 0);
       
       let markdown = `# Team Activity Report
 
@@ -117,9 +117,9 @@ function TeamReport({ users, corporateUsers, onClose }) {
         markdown += `### ${userData.username}
 
 **GitHub Activity (${currentYear}):**
-- Personal Commits: ${userData.personal2025Contributions.toLocaleString()}
-- Corporate Commits: ${userData.corporate2025Contributions.toLocaleString()}
-- **Total:** ${(userData.personal2025Contributions + userData.corporate2025Contributions).toLocaleString()}
+- Personal Commits: ${userData.personalYearContributions.toLocaleString()}
+- Corporate Commits: ${userData.corporateYearContributions.toLocaleString()}
+- **Total:** ${(userData.personalYearContributions + userData.corporateYearContributions).toLocaleString()}
 
 `;
 
@@ -308,9 +308,10 @@ For more detailed analytics and visualizations, access the full dashboard.`;
             // Fetch corporate contributions
             let corporateData;
             try {
+              const currentYear = new Date().getFullYear();
               corporateData = await fetchGraphQL(contributionsQuery, {
                 username: corporateUser,
-                from: '2025-01-01T00:00:00Z',
+                from: `${currentYear}-01-01T00:00:00Z`,
                 to: now.toISOString()
               }, false);
             } catch (err) {
@@ -371,24 +372,25 @@ For more detailed analytics and visualizations, access the full dashboard.`;
               console.warn(`Failed to fetch presentation data for ${username}:`, err);
             }
 
-            // Calculate 2025 contributions with safe fallbacks
-            const personal2025Contributions = personalData?.data?.user?.contributionsCollection?.contributionCalendar?.weeks
+            // Calculate current year contributions with safe fallbacks
+            const currentYear = new Date().getFullYear().toString();
+            const personalYearContributions = personalData?.data?.user?.contributionsCollection?.contributionCalendar?.weeks
               ? personalData.data.user.contributionsCollection.contributionCalendar.weeks
                   .reduce((sum, week) => sum + week.contributionDays
-                    .reduce((daySum, day) => daySum + (day.date.startsWith('2025') ? day.contributionCount : 0), 0), 0)
+                    .reduce((daySum, day) => daySum + (day.date.startsWith(currentYear) ? day.contributionCount : 0), 0), 0)
               : 0;
 
-            const corporate2025Contributions = corporateData?.data?.user?.contributionsCollection?.contributionCalendar?.weeks
+            const corporateYearContributions = corporateData?.data?.user?.contributionsCollection?.contributionCalendar?.weeks
               ? corporateData.data.user.contributionsCollection.contributionCalendar.weeks
                   .reduce((sum, week) => sum + week.contributionDays
-                    .reduce((daySum, day) => daySum + (day.date.startsWith('2025') ? day.contributionCount : 0), 0), 0)
+                    .reduce((daySum, day) => daySum + (day.date.startsWith(currentYear) ? day.contributionCount : 0), 0), 0)
               : 0;
 
             return {
               username,
               corporateUser,
-              personal2025Contributions,
-              corporate2025Contributions,
+              personalYearContributions,
+              corporateYearContributions,
               latestNote,
               reinforcements,
               readingData,
@@ -400,8 +402,8 @@ For more detailed analytics and visualizations, access the full dashboard.`;
             return {
               username,
               corporateUser: corporateUsers[index] || 'unknown',
-              personal2025Contributions: 0,
-              corporate2025Contributions: 0,
+              personalYearContributions: 0,
+              corporateYearContributions: 0,
               latestNote: null,
               reinforcements: null,
               readingData: null,
@@ -550,15 +552,15 @@ For more detailed analytics and visualizations, access the full dashboard.`;
                   </div>
                   <div className="flex gap-4">
                     <div className="text-right">
-                      <p className="text-sm text-gray-400">Personal Commits (2025)</p>
+                      <p className="text-sm text-gray-400">Personal Commits ({new Date().getFullYear()})</p>
                       <p className="text-lg font-medium text-[#4ade80]">
-                        {userData.personal2025Contributions}
+                        {userData.personalYearContributions}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-gray-400">Corporate Commits (2025)</p>
+                      <p className="text-sm text-gray-400">Corporate Commits ({new Date().getFullYear()})</p>
                       <p className="text-lg font-medium text-[#4ade80]">
-                        {userData.corporate2025Contributions}
+                        {userData.corporateYearContributions}
                       </p>
                     </div>
                   </div>
@@ -659,7 +661,7 @@ For more detailed analytics and visualizations, access the full dashboard.`;
                     <h4 className="text-sm font-medium text-gray-400 mb-2 flex justify-between items-center">
                       <span>Reading Progress</span>
                       <span className="text-[#4ade80] text-xs">
-                        {userData.readingData.readingGoals.completed}/{userData.readingData.readingGoals.yearly} books (2025)
+                        {userData.readingData.readingGoals.completed}/{userData.readingData.readingGoals.yearly} books ({new Date().getFullYear()})
                       </span>
                     </h4>
                     <div className="bg-[#1e293b] rounded p-4">
