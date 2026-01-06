@@ -136,9 +136,10 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
     fetchData();
   }, [corporateUser]);
 
-  const total2025Contributions = weeks.reduce((sum, week) => 
+  const currentYear = new Date().getFullYear().toString();
+  const totalYearContributions = weeks.reduce((sum, week) => 
     sum + week.contributionDays.reduce((wSum, day) => 
-      wSum + (day.date.startsWith('2025') ? day.contributionCount : 0), 0), 0);
+      wSum + (day.date.startsWith(currentYear) ? day.contributionCount : 0), 0), 0);
   
   const trendData = calculateTrend(weeks);
 
@@ -190,7 +191,7 @@ const CorporateContributionHeatmap: React.FC<CorporateContributionHeatmapProps> 
           </h3>
           <div className="flex items-center gap-3">
             <span className="text-[#4ade80] font-medium">
-              {total2025Contributions} Corporate Commits in 2025
+              {totalYearContributions} Corporate Commits in {new Date().getFullYear()}
             </span>
             {trendData.trend !== 'neutral' && (
               <div 

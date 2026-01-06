@@ -12,7 +12,8 @@ const GithubContributionGraph: React.FC<GithubContributionGraphProps> = ({ usern
     try {
       const response = await fetch(`/api/github-stats/${username}`);
       const data = await response.json();
-      return data.total['2025'] || 0;
+      const currentYear = new Date().getFullYear().toString();
+      return data.total[currentYear] || 0;
     } catch (error) {
       console.error('Error fetching commit data:', error);
       return 0;
@@ -39,7 +40,7 @@ const GithubContributionGraph: React.FC<GithubContributionGraphProps> = ({ usern
             </svg>
             Contribution Activity
           </h3>
-          <span className="text-[#4ade80] font-medium">{totalCommits} Commits in 2025</span>
+          <span className="text-[#4ade80] font-medium">{totalCommits} Commits in {new Date().getFullYear()}</span>
         </div>
       </div>
 
