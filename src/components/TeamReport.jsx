@@ -21,29 +21,51 @@ function TeamReport({ users, corporateUsers, onClose }) {
     try {
       setIsGeneratingPDF(true);
       
-      // Create a clone of the report for PDF generation
+      // Get the report element
       const reportElement = reportRef.current;
       
-      // Configure html2canvas options for smaller file size
+      // Store the original parent styles
+      const parentContainer = reportElement.parentElement;
+      const originalParentOverflow = parentContainer.style.overflow;
+      const originalParentMaxHeight = parentContainer.style.maxHeight;
+      
+      // Temporarily remove scroll constraints to capture full content
+      parentContainer.style.overflow = 'visible';
+      parentContainer.style.maxHeight = 'none';
+      
+      // Wait for layout to settle
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Configure html2canvas options
       const canvas = await html2canvas(reportElement, {
-        scale: 0.8, // Reduced scale for smaller file size
+        scale: 1.5, // Higher scale for better quality
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#0f172a',
-        width: reportElement.scrollWidth,
-        height: reportElement.scrollHeight,
-        logging: false, // Disable console logs
-        quality: 0.7, // Reduce image quality
+        windowWidth: reportElement.scrollWidth,
+        windowHeight: reportElement.scrollHeight,
+        logging: false,
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.querySelector('[style*="space-y-8"]');
+          if (clonedElement) {
+            clonedElement.style.overflow = 'visible';
+            clonedElement.style.height = 'auto';
+          }
+        }
       });
       
-      const imgData = canvas.toDataURL('image/jpeg', 0.7); // Use JPEG with 70% quality
+      // Restore original parent styles
+      parentContainer.style.overflow = originalParentOverflow;
+      parentContainer.style.maxHeight = originalParentMaxHeight;
       
-      // Calculate dimensions for a single continuous page
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      
+      // Calculate dimensions
       const imgWidth = 210; // A4 width in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      // Create PDF with custom page size to fit all content
-      const pdf = new jsPDF('p', 'mm', [210, imgHeight + 50]); // Add 50mm for header
+      // Create PDF with custom page size
+      const pdf = new jsPDF('p', 'mm', [210, imgHeight + 50]);
       
       // Add header
       pdf.setFontSize(18);
@@ -55,19 +77,20 @@ function TeamReport({ users, corporateUsers, onClose }) {
       pdf.text(`Generated on: ${format(new Date(), 'MMMM d, yyyy')}`, 150, 15);
       
       // Add summary stats
-      const totalPersonalCommits = teamData.reduce((sum, user) => sum + user.personal2025Contributions, 0);
-      const totalCorporateCommits = teamData.reduce((sum, user) => sum + user.corporate2025Contributions, 0);
+      const currentYear = new Date().getFullYear();
+      const totalPersonalCommits = teamData.reduce((sum, user) => sum + user.personalYearContributions, 0);
+      const totalCorporateCommits = teamData.reduce((sum, user) => sum + user.corporateYearContributions, 0);
       
       pdf.setFontSize(12);
       pdf.text(`Team Members: ${teamData.length}`, 20, 25);
-      pdf.text(`Total Personal Commits (2025): ${totalPersonalCommits}`, 20, 30);
-      pdf.text(`Total Corporate Commits (2025): ${totalCorporateCommits}`, 20, 35);
+      pdf.text(`Total Personal Commits (${currentYear}): ${totalPersonalCommits}`, 20, 30);
+      pdf.text(`Total Corporate Commits (${currentYear}): ${totalCorporateCommits}`, 20, 35);
       
       // Add separator line
       pdf.setLineWidth(0.5);
       pdf.line(20, 40, 190, 40);
       
-      // Add the entire content as one image on the custom-sized page
+      // Add the content image
       pdf.addImage(imgData, 'PNG', 0, 45, imgWidth, imgHeight);
       
       // Save the PDF
