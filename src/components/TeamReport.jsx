@@ -13,6 +13,8 @@ function TeamReport({ users, corporateUsers, onClose }) {
   const [teamData, setTeamData] = useState([]);
   const [error, setError] = useState(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [weeklyData, setWeeklyData] = useState({});
+  const [showWeeklyForm, setShowWeeklyForm] = useState(false);
   const reportRef = useRef(null);
 
   const generatePDF = async () => {
@@ -105,6 +107,32 @@ function TeamReport({ users, corporateUsers, onClose }) {
     }
   };
 
+  // Initialize weekly data for all users
+  useEffect(() => {
+    const initialWeeklyData = {};
+    users.forEach(username => {
+      initialWeeklyData[username] = {
+        pagesRead: '',
+        pocsCompleted: '',
+        bulletPoints: ['', '', '']
+      };
+    });
+    setWeeklyData(initialWeeklyData);
+  }, [users]);
+
+  // Update weekly data for a specific user
+  const updateWeeklyData = (username, field, value, index = null) => {
+    setWeeklyData(prev => {
+      const updated = { ...prev };
+      if (field === 'bulletPoints') {
+        updated[username].bulletPoints[index] = value;
+      } else {
+        updated[username][field] = value;
+      }
+      return updated;
+    });
+  };
+
   const generateMarkdown = async () => {
     try {
       const currentDate = format(new Date(), 'MMMM d, yyyy');
@@ -145,6 +173,26 @@ function TeamReport({ users, corporateUsers, onClose }) {
 - **Total:** ${(userData.personalYearContributions + userData.corporateYearContributions).toLocaleString()}
 
 `;
+
+        // Add weekly information if available
+        const userWeeklyData = weeklyData[userData.username];
+        if (userWeeklyData && (userWeeklyData.pagesRead || userWeeklyData.pocsCompleted || userWeeklyData.bulletPoints.some(bp => bp))) {
+          markdown += `**This Week:**\n`;
+          if (userWeeklyData.pagesRead) {
+            markdown += `- Pages Read: ${userWeeklyData.pagesRead}\n`;
+          }
+          if (userWeeklyData.pocsCompleted) {
+            markdown += `- POCs Completed: ${userWeeklyData.pocsCompleted}\n`;
+          }
+          const filledBulletPoints = userWeeklyData.bulletPoints.filter(bp => bp);
+          if (filledBulletPoints.length > 0) {
+            markdown += `- Key Points:\n`;
+            filledBulletPoints.forEach(point => {
+              markdown += `  - ${point}\n`;
+            });
+          }
+          markdown += `\n`;
+        }
 
         // Capture personal contribution graph
         try {
@@ -478,6 +526,20 @@ For more detailed analytics and visualizations, access the full dashboard.`;
           <h2 className="text-2xl font-bold text-white">Team Activity Report</h2>
           <div className="flex items-center gap-3">
             <button
+              onClick={() => setShowWeeklyForm(!showWeeklyForm)}
+              disabled={isLoading}
+              className={`flex items-center gap-2 px-4 py-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                showWeeklyForm 
+                  ? 'bg-[#4ade80] text-black hover:bg-[#86efac]' 
+                  : 'bg-[#334155] text-white hover:bg-[#475569]'
+              }`}
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              {showWeeklyForm ? 'Hide' : 'Weekly Info'}
+            </button>
+            <button
               onClick={generateMarkdown}
               disabled={isLoading}
               className="flex items-center gap-2 px-4 py-2 bg-[#3b82f6] text-white rounded hover:bg-[#60a5fa] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -520,6 +582,63 @@ For more detailed analytics and visualizations, access the full dashboard.`;
             </button>
           </div>
         </div>
+
+        {/* Weekly Information Form */}
+        {showWeeklyForm && !isLoading && (
+          <div className="mb-6 bg-[#0f172a] border border-[#334155] rounded-lg p-4">
+            <h3 className="text-xl font-semibold text-white mb-4">Weekly Information</h3>
+            <div className="space-y-6">
+              {users.map(username => (
+                <div key={username} className="bg-[#1e293b] border border-[#334155] rounded-lg p-4">
+                  <h4 className="text-lg font-medium text-white mb-3">{username}</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-1">
+                        Pages Read This Week
+                      </label>
+                      <input
+                        type="number"
+                        value={weeklyData[username]?.pagesRead || ''}
+                        onChange={(e) => updateWeeklyData(username, 'pagesRead', e.target.value)}
+                        className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                        placeholder="e.g., 45"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-1">
+                        POCs Completed This Week
+                      </label>
+                      <input
+                        type="number"
+                        value={weeklyData[username]?.pocsCompleted || ''}
+                        onChange={(e) => updateWeeklyData(username, 'pocsCompleted', e.target.value)}
+                        className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                        placeholder="e.g., 2"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">
+                      3 Bullet Points
+                    </label>
+                    <div className="space-y-2">
+                      {[0, 1, 2].map(index => (
+                        <input
+                          key={index}
+                          type="text"
+                          value={weeklyData[username]?.bulletPoints[index] || ''}
+                          onChange={(e) => updateWeeklyData(username, 'bulletPoints', e.target.value, index)}
+                          className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                          placeholder={`Bullet point ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
@@ -588,6 +707,50 @@ For more detailed analytics and visualizations, access the full dashboard.`;
                     </div>
                   </div>
                 </div>
+
+                {/* Weekly Information Section */}
+                {weeklyData[userData.username] && (
+                  weeklyData[userData.username].pagesRead || 
+                  weeklyData[userData.username].pocsCompleted || 
+                  weeklyData[userData.username].bulletPoints.some(bp => bp)
+                ) && (
+                  <div className="bg-[#1e293b] border border-[#334155] rounded-lg p-4 mb-4">
+                    <h4 className="text-lg font-medium text-white mb-3">📊 This Week</h4>
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      {weeklyData[userData.username].pagesRead && (
+                        <div>
+                          <p className="text-sm text-gray-400">Pages Read</p>
+                          <p className="text-xl font-semibold text-[#4ade80]">
+                            {weeklyData[userData.username].pagesRead}
+                          </p>
+                        </div>
+                      )}
+                      {weeklyData[userData.username].pocsCompleted && (
+                        <div>
+                          <p className="text-sm text-gray-400">POCs Completed</p>
+                          <p className="text-xl font-semibold text-[#4ade80]">
+                            {weeklyData[userData.username].pocsCompleted}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    {weeklyData[userData.username].bulletPoints.some(bp => bp) && (
+                      <div>
+                        <p className="text-sm text-gray-400 mb-2">Key Points</p>
+                        <ul className="space-y-1">
+                          {weeklyData[userData.username].bulletPoints
+                            .filter(bp => bp)
+                            .map((point, idx) => (
+                              <li key={idx} className="text-white flex items-start gap-2">
+                                <span className="text-[#4ade80] mt-1">•</span>
+                                <span>{point}</span>
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex flex-col gap-4 mb-4">
                   <div className="w-full">
