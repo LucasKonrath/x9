@@ -114,7 +114,9 @@ function TeamReport({ users, corporateUsers, onClose }) {
       initialWeeklyData[username] = {
         pagesRead: '',
         pocsCompleted: '',
-        bulletPoints: ['', '', '']
+        bulletPoints: ['', '', ''],
+        feedbackDate1: '',
+        feedbackDate2: ''
       };
     });
     setWeeklyData(initialWeeklyData);
@@ -176,7 +178,7 @@ function TeamReport({ users, corporateUsers, onClose }) {
 
         // Add weekly information if available
         const userWeeklyData = weeklyData[userData.username];
-        if (userWeeklyData && (userWeeklyData.pagesRead || userWeeklyData.pocsCompleted || userWeeklyData.bulletPoints.some(bp => bp))) {
+        if (userWeeklyData && (userWeeklyData.pagesRead || userWeeklyData.pocsCompleted || userWeeklyData.bulletPoints.some(bp => bp) || userWeeklyData.feedbackDate1 || userWeeklyData.feedbackDate2)) {
           markdown += `**This Week:**\n`;
           if (userWeeklyData.pagesRead) {
             markdown += `- Pages Read: ${userWeeklyData.pagesRead}\n`;
@@ -190,6 +192,15 @@ function TeamReport({ users, corporateUsers, onClose }) {
             filledBulletPoints.forEach(point => {
               markdown += `  - ${point}\n`;
             });
+          }
+          if (userWeeklyData.feedbackDate1 || userWeeklyData.feedbackDate2) {
+            markdown += `- Feedback Sessions:\n`;
+            if (userWeeklyData.feedbackDate1) {
+              markdown += `  - ${userWeeklyData.feedbackDate1}\n`;
+            }
+            if (userWeeklyData.feedbackDate2) {
+              markdown += `  - ${userWeeklyData.feedbackDate2}\n`;
+            }
           }
           markdown += `\n`;
         }
@@ -634,6 +645,27 @@ For more detailed analytics and visualizations, access the full dashboard.`;
                       ))}
                     </div>
                   </div>
+                  <div className="mt-4">
+                    <label className="block text-sm text-gray-400 mb-2">
+                      Last 2 Feedback Sessions with Manager
+                    </label>
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={weeklyData[username]?.feedbackDate1 || ''}
+                        onChange={(e) => updateWeeklyData(username, 'feedbackDate1', e.target.value)}
+                        className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                        placeholder="Most recent feedback session (e.g., Jan 10, 2026)"
+                      />
+                      <input
+                        type="text"
+                        value={weeklyData[username]?.feedbackDate2 || ''}
+                        onChange={(e) => updateWeeklyData(username, 'feedbackDate2', e.target.value)}
+                        className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                        placeholder="Previous feedback session (e.g., Dec 28, 2025)"
+                      />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -712,7 +744,9 @@ For more detailed analytics and visualizations, access the full dashboard.`;
                 {weeklyData[userData.username] && (
                   weeklyData[userData.username].pagesRead || 
                   weeklyData[userData.username].pocsCompleted || 
-                  weeklyData[userData.username].bulletPoints.some(bp => bp)
+                  weeklyData[userData.username].bulletPoints.some(bp => bp) ||
+                  weeklyData[userData.username].feedbackDate1 ||
+                  weeklyData[userData.username].feedbackDate2
                 ) && (
                   <div className="bg-[#1e293b] border border-[#334155] rounded-lg p-4 mb-4">
                     <h4 className="text-lg font-medium text-white mb-3">📊 This Week</h4>
@@ -735,7 +769,7 @@ For more detailed analytics and visualizations, access the full dashboard.`;
                       )}
                     </div>
                     {weeklyData[userData.username].bulletPoints.some(bp => bp) && (
-                      <div>
+                      <div className="mb-3">
                         <p className="text-sm text-gray-400 mb-2">Key Points</p>
                         <ul className="space-y-1">
                           {weeklyData[userData.username].bulletPoints
@@ -746,6 +780,25 @@ For more detailed analytics and visualizations, access the full dashboard.`;
                                 <span>{point}</span>
                               </li>
                             ))}
+                        </ul>
+                      </div>
+                    )}
+                    {(weeklyData[userData.username].feedbackDate1 || weeklyData[userData.username].feedbackDate2) && (
+                      <div>
+                        <p className="text-sm text-gray-400 mb-2">Feedback Sessions</p>
+                        <ul className="space-y-1">
+                          {weeklyData[userData.username].feedbackDate1 && (
+                            <li className="text-white flex items-start gap-2">
+                              <span className="text-[#4ade80] mt-1">•</span>
+                              <span>{weeklyData[userData.username].feedbackDate1}</span>
+                            </li>
+                          )}
+                          {weeklyData[userData.username].feedbackDate2 && (
+                            <li className="text-white flex items-start gap-2">
+                              <span className="text-[#4ade80] mt-1">•</span>
+                              <span>{weeklyData[userData.username].feedbackDate2}</span>
+                            </li>
+                          )}
                         </ul>
                       </div>
                     )}

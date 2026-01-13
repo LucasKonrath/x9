@@ -9,7 +9,9 @@ function MarkdownEditor({ username, onSave, editingPost, onCancelEdit, forceOpen
   const [weeklyData, setWeeklyData] = useState({
     pagesRead: '',
     pocsCompleted: '',
-    bulletPoints: ['', '', '']
+    bulletPoints: ['', '', ''],
+    feedbackDate1: '',
+    feedbackDate2: ''
   });
 
   // Effect to handle editing mode
@@ -99,6 +101,17 @@ function MarkdownEditor({ username, onSave, editingPost, onCancelEdit, forceOpen
           weeklySummary += '\n';
         }
         
+        if (weeklyData.feedbackDate1 || weeklyData.feedbackDate2) {
+          weeklySummary += '**Feedback Sessions:**\n';
+          if (weeklyData.feedbackDate1) {
+            weeklySummary += `- ${weeklyData.feedbackDate1}\n`;
+          }
+          if (weeklyData.feedbackDate2) {
+            weeklySummary += `- ${weeklyData.feedbackDate2}\n`;
+          }
+          weeklySummary += '\n';
+        }
+        
         weeklySummary += '---\n\n';
         finalMarkdown = weeklySummary + markdown;
       }
@@ -111,7 +124,9 @@ function MarkdownEditor({ username, onSave, editingPost, onCancelEdit, forceOpen
       setWeeklyData({
         pagesRead: '',
         pocsCompleted: '',
-        bulletPoints: ['', '', '']
+        bulletPoints: ['', '', ''],
+        feedbackDate1: '',
+        feedbackDate2: ''
       });
       setIsOpen(false);
 
@@ -133,7 +148,9 @@ function MarkdownEditor({ username, onSave, editingPost, onCancelEdit, forceOpen
     setWeeklyData({
       pagesRead: '',
       pocsCompleted: '',
-      bulletPoints: ['', '', '']
+      bulletPoints: ['', '', ''],
+      feedbackDate1: '',
+      feedbackDate2: ''
     });
     setError(null);
 
@@ -237,6 +254,27 @@ function MarkdownEditor({ username, onSave, editingPost, onCancelEdit, forceOpen
                           placeholder={`Key point ${index + 1}`}
                         />
                       ))}
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm text-gray-400 mb-2">
+                      Last 2 Feedback Sessions with Manager
+                    </label>
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={weeklyData.feedbackDate1}
+                        onChange={(e) => setWeeklyData({...weeklyData, feedbackDate1: e.target.value})}
+                        className="w-full px-3 py-2 bg-[#1e293b] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                        placeholder="Most recent feedback session (e.g., Jan 10, 2026)"
+                      />
+                      <input
+                        type="text"
+                        value={weeklyData.feedbackDate2}
+                        onChange={(e) => setWeeklyData({...weeklyData, feedbackDate2: e.target.value})}
+                        className="w-full px-3 py-2 bg-[#1e293b] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                        placeholder="Previous feedback session (e.g., Dec 28, 2025)"
+                      />
                     </div>
                   </div>
                 </div>
