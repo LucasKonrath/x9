@@ -23,114 +23,121 @@ function TeamReport({ users, corporateUsers, onClose }) {
     try {
       setIsGeneratingPDF(true);
       
-      // Get the report element and its containers
-      const reportElement = reportRef.current;
-      const parentContainer = reportElement.parentElement;
-      const modalContainer = parentContainer.parentElement;
-      
-      // Store original styles
-      const originalStyles = {
-        parentOverflow: parentContainer.style.overflow,
-        parentMaxHeight: parentContainer.style.maxHeight,
-        modalOverflow: modalContainer.style.overflow,
-        reportHeight: reportElement.style.height
-      };
-      
-      // Remove all scroll and height constraints
-      parentContainer.style.overflow = 'visible';
-      parentContainer.style.maxHeight = 'none';
-      modalContainer.style.overflow = 'visible';
-      reportElement.style.height = 'auto';
-      
-      // Force a reflow to ensure layout is updated
-      reportElement.offsetHeight;
-      
-      // Wait for layout to fully settle
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Get the actual rendered height
-      const actualHeight = reportElement.scrollHeight;
-      
-      console.log('Capturing report with height:', actualHeight);
-      
-      // Configure html2canvas with explicit dimensions
-      const canvas = await html2canvas(reportElement, {
-        scale: 1.2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#0f172a',
-        width: reportElement.scrollWidth,
-        height: actualHeight,
-        windowWidth: reportElement.scrollWidth,
-        windowHeight: actualHeight,
-        logging: true,
-        onclone: (clonedDoc) => {
-          // Ensure cloned document has no scroll constraints
-          const clonedElement = clonedDoc.body.querySelector('[class*="space-y-8"]');
-          if (clonedElement) {
-            clonedElement.style.overflow = 'visible';
-            clonedElement.style.height = 'auto';
-            clonedElement.style.maxHeight = 'none';
-          }
-          // Remove any max-height from parent containers in clone
-          const containers = clonedDoc.body.querySelectorAll('[style*="max-h"]');
-          containers.forEach(el => {
-            el.style.maxHeight = 'none';
-            el.style.overflow = 'visible';
-          });
-        }
-      });
-      
-      // Restore original styles
-      parentContainer.style.overflow = originalStyles.parentOverflow;
-      parentContainer.style.maxHeight = originalStyles.parentMaxHeight;
-      modalContainer.style.overflow = originalStyles.modalOverflow;
-      reportElement.style.height = originalStyles.reportHeight;
-      
-      console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
-      
-      const imgData = canvas.toDataURL('image/png', 0.95);
-      
-      // Calculate dimensions
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      console.log('PDF image dimensions:', imgWidth, 'x', imgHeight);
-      
-      // Create PDF with custom page size to fit all content
-      const pdf = new jsPDF('p', 'mm', [210, Math.max(imgHeight + 50, 297)]); // Minimum A4 height
-      
-      // Add header
-      pdf.setFontSize(18);
-      pdf.setFont(undefined, 'bold');
-      pdf.text('Team Activity Report', 20, 15);
-      
-      pdf.setFontSize(10);
-      pdf.setFont(undefined, 'normal');
-      pdf.text(`Generated on: ${format(new Date(), 'MMMM d, yyyy')}`, 150, 15);
-      
-      // Add summary stats
       const currentYear = new Date().getFullYear();
       const totalPersonalCommits = teamData.reduce((sum, user) => sum + user.personalYearContributions, 0);
       const totalCorporateCommits = teamData.reduce((sum, user) => sum + user.corporateYearContributions, 0);
       
+      // Create PDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let isFirstPage = true;
+      
+      // Add header page
+      pdf.setFontSize(24);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Team Activity Report', 105, 40, { align: 'center' });
+      
       pdf.setFontSize(12);
-      pdf.text(`Team Members: ${teamData.length}`, 20, 25);
-      pdf.text(`Total Personal Commits (${currentYear}): ${totalPersonalCommits}`, 20, 30);
-      pdf.text(`Total Corporate Commits (${currentYear}): ${totalCorporateCommits}`, 20, 35);
+      pdf.setFont(undefined, 'normal');
+      pdf.text(`Generated on: ${format(new Date(), 'MMMM d, yyyy')}`, 105, 55, { align: 'center' });
       
-      // Add separator line
-      pdf.setLineWidth(0.5);
-      pdf.line(20, 40, 190, 40);
+      // Add summary stats
+      pdf.setFontSize(14);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Summary', 20, 80);
       
-      // Add the content image
-      pdf.addImage(imgData, 'PNG', 0, 45, imgWidth, imgHeight);
+      pdf.setFontSize(11);
+      pdf.setFont(undefined, 'normal');
+      pdf.text(`Team Members: ${teamData.length}`, 20, 95);
+      pdf.text(`Total Personal Commits (${currentYear}): ${totalPersonalCommits.toLocaleString()}`, 20, 105);
+      pdf.text(`Total Corporate Commits (${currentYear}): ${totalCorporateCommits.toLocaleString()}`, 20, 115);
+      pdf.text(`Combined Total: ${(totalPersonalCommits + totalCorporateCommits).toLocaleString()}`, 20, 125);
+      
+      // Get all team member cards
+      const teamCards = reportRef.current.querySelectorAll('.bg-\\[\\#0f172a\\].border.border-\\[\\#334155\\].rounded-lg.p-4');
+      
+      console.log(`Found ${teamCards.length} team member cards to process`);
+      
+      // Process each team member card
+      for (let i = 0; i < teamCards.length; i++) {
+        const card = teamCards[i];
+        
+        console.log(`Processing team member ${i + 1}/${teamCards.length}`);
+        
+        // Add new page for each team member
+        pdf.addPage();
+        
+        // Temporarily make card visible and remove constraints
+        const originalStyles = {
+          maxHeight: card.style.maxHeight,
+          overflow: card.style.overflow,
+          height: card.style.height
+        };
+        
+        card.style.maxHeight = 'none';
+        card.style.overflow = 'visible';
+        card.style.height = 'auto';
+        
+        // Wait for layout
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        try {
+          // Capture this team member's card
+          const canvas = await html2canvas(card, {
+            scale: 1.0,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#0f172a',
+            logging: false,
+            width: card.scrollWidth,
+            height: card.scrollHeight
+          });
+          
+          // Restore original styles
+          card.style.maxHeight = originalStyles.maxHeight;
+          card.style.overflow = originalStyles.overflow;
+          card.style.height = originalStyles.height;
+          
+          const imgData = canvas.toDataURL('image/png', 0.9);
+          
+          // Calculate dimensions to fit A4 page with margins
+          const pageWidth = 210; // A4 width in mm
+          const pageHeight = 297; // A4 height in mm
+          const margin = 10;
+          const maxWidth = pageWidth - (2 * margin);
+          const maxHeight = pageHeight - (2 * margin);
+          
+          let imgWidth = maxWidth;
+          let imgHeight = (canvas.height * imgWidth) / canvas.width;
+          
+          // If image is too tall, scale it down
+          if (imgHeight > maxHeight) {
+            imgHeight = maxHeight;
+            imgWidth = (canvas.width * imgHeight) / canvas.height;
+          }
+          
+          // Center the image on the page
+          const xPos = (pageWidth - imgWidth) / 2;
+          const yPos = margin;
+          
+          pdf.addImage(imgData, 'PNG', xPos, yPos, imgWidth, imgHeight);
+          
+          console.log(`Successfully added team member ${i + 1} to PDF`);
+          
+        } catch (err) {
+          console.error(`Failed to capture team member ${i + 1}:`, err);
+          
+          // Restore styles even on error
+          card.style.maxHeight = originalStyles.maxHeight;
+          card.style.overflow = originalStyles.overflow;
+          card.style.height = originalStyles.height;
+        }
+      }
       
       // Save the PDF
       const fileName = `team-activity-report-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`;
       pdf.save(fileName);
       
-      console.log('PDF generated successfully');
+      console.log('PDF generated successfully with all team members');
       
     } catch (error) {
       console.error('Error generating PDF:', error);
