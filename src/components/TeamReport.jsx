@@ -23,51 +23,82 @@ function TeamReport({ users, corporateUsers, onClose }) {
     try {
       setIsGeneratingPDF(true);
       
-      // Get the report element
+      // Get the report element and its containers
       const reportElement = reportRef.current;
-      
-      // Store the original parent styles
       const parentContainer = reportElement.parentElement;
-      const originalParentOverflow = parentContainer.style.overflow;
-      const originalParentMaxHeight = parentContainer.style.maxHeight;
+      const modalContainer = parentContainer.parentElement;
       
-      // Temporarily remove scroll constraints to capture full content
+      // Store original styles
+      const originalStyles = {
+        parentOverflow: parentContainer.style.overflow,
+        parentMaxHeight: parentContainer.style.maxHeight,
+        modalOverflow: modalContainer.style.overflow,
+        reportHeight: reportElement.style.height
+      };
+      
+      // Remove all scroll and height constraints
       parentContainer.style.overflow = 'visible';
       parentContainer.style.maxHeight = 'none';
+      modalContainer.style.overflow = 'visible';
+      reportElement.style.height = 'auto';
       
-      // Wait for layout to settle
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Force a reflow to ensure layout is updated
+      reportElement.offsetHeight;
       
-      // Configure html2canvas options
+      // Wait for layout to fully settle
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Get the actual rendered height
+      const actualHeight = reportElement.scrollHeight;
+      
+      console.log('Capturing report with height:', actualHeight);
+      
+      // Configure html2canvas with explicit dimensions
       const canvas = await html2canvas(reportElement, {
-        scale: 1.5, // Higher scale for better quality
+        scale: 1.2,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#0f172a',
+        width: reportElement.scrollWidth,
+        height: actualHeight,
         windowWidth: reportElement.scrollWidth,
-        windowHeight: reportElement.scrollHeight,
-        logging: false,
+        windowHeight: actualHeight,
+        logging: true,
         onclone: (clonedDoc) => {
-          const clonedElement = clonedDoc.querySelector('[style*="space-y-8"]');
+          // Ensure cloned document has no scroll constraints
+          const clonedElement = clonedDoc.body.querySelector('[class*="space-y-8"]');
           if (clonedElement) {
             clonedElement.style.overflow = 'visible';
             clonedElement.style.height = 'auto';
+            clonedElement.style.maxHeight = 'none';
           }
+          // Remove any max-height from parent containers in clone
+          const containers = clonedDoc.body.querySelectorAll('[style*="max-h"]');
+          containers.forEach(el => {
+            el.style.maxHeight = 'none';
+            el.style.overflow = 'visible';
+          });
         }
       });
       
-      // Restore original parent styles
-      parentContainer.style.overflow = originalParentOverflow;
-      parentContainer.style.maxHeight = originalParentMaxHeight;
+      // Restore original styles
+      parentContainer.style.overflow = originalStyles.parentOverflow;
+      parentContainer.style.maxHeight = originalStyles.parentMaxHeight;
+      modalContainer.style.overflow = originalStyles.modalOverflow;
+      reportElement.style.height = originalStyles.reportHeight;
       
-      const imgData = canvas.toDataURL('image/png', 1.0);
+      console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
+      
+      const imgData = canvas.toDataURL('image/png', 0.95);
       
       // Calculate dimensions
       const imgWidth = 210; // A4 width in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      // Create PDF with custom page size
-      const pdf = new jsPDF('p', 'mm', [210, imgHeight + 50]);
+      console.log('PDF image dimensions:', imgWidth, 'x', imgHeight);
+      
+      // Create PDF with custom page size to fit all content
+      const pdf = new jsPDF('p', 'mm', [210, Math.max(imgHeight + 50, 297)]); // Minimum A4 height
       
       // Add header
       pdf.setFontSize(18);
@@ -98,6 +129,8 @@ function TeamReport({ users, corporateUsers, onClose }) {
       // Save the PDF
       const fileName = `team-activity-report-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`;
       pdf.save(fileName);
+      
+      console.log('PDF generated successfully');
       
     } catch (error) {
       console.error('Error generating PDF:', error);
