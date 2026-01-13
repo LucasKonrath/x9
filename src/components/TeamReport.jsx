@@ -81,9 +81,9 @@ function TeamReport({ users, corporateUsers, onClose }) {
         await new Promise(resolve => setTimeout(resolve, 100));
         
         try {
-          // Capture this team member's card
+          // Capture this team member's card with reduced scale for smaller file size
           const canvas = await html2canvas(card, {
-            scale: 1.0,
+            scale: 0.5,
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#0f172a',
@@ -97,7 +97,8 @@ function TeamReport({ users, corporateUsers, onClose }) {
           card.style.overflow = originalStyles.overflow;
           card.style.height = originalStyles.height;
           
-          const imgData = canvas.toDataURL('image/png', 0.9);
+          // Use JPEG with compression for much smaller file size
+          const imgData = canvas.toDataURL('image/jpeg', 0.5);
           
           // Calculate dimensions to fit A4 page with margins
           const pageWidth = 210; // A4 width in mm
@@ -119,7 +120,8 @@ function TeamReport({ users, corporateUsers, onClose }) {
           const xPos = (pageWidth - imgWidth) / 2;
           const yPos = margin;
           
-          pdf.addImage(imgData, 'PNG', xPos, yPos, imgWidth, imgHeight);
+          // Add as JPEG for smaller file size
+          pdf.addImage(imgData, 'JPEG', xPos, yPos, imgWidth, imgHeight, undefined, 'FAST');
           
           console.log(`Successfully added team member ${i + 1} to PDF`);
           
