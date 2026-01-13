@@ -6,6 +6,11 @@ function MarkdownEditor({ username, onSave, editingPost, onCancelEdit, forceOpen
   const [markdown, setMarkdown] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [weeklyData, setWeeklyData] = useState({
+    pagesRead: '',
+    pocsCompleted: '',
+    bulletPoints: ['', '', '']
+  });
 
   // Effect to handle editing mode
   useEffect(() => {
@@ -68,11 +73,46 @@ function MarkdownEditor({ username, onSave, editingPost, onCancelEdit, forceOpen
 
       console.log('Saving file with name:', fileName);
 
+      // Prepend weekly summary to markdown content if any data is filled
+      let finalMarkdown = markdown;
+      const hasWeeklyData = weeklyData.pagesRead || weeklyData.pocsCompleted || weeklyData.bulletPoints.some(bp => bp);
+      
+      if (hasWeeklyData) {
+        let weeklySummary = '## Weekly Summary\n\n';
+        
+        if (weeklyData.pagesRead || weeklyData.pocsCompleted) {
+          if (weeklyData.pagesRead) {
+            weeklySummary += `- **Pages Read:** ${weeklyData.pagesRead}\n`;
+          }
+          if (weeklyData.pocsCompleted) {
+            weeklySummary += `- **POCs Completed:** ${weeklyData.pocsCompleted}\n`;
+          }
+          weeklySummary += '\n';
+        }
+        
+        const filledBulletPoints = weeklyData.bulletPoints.filter(bp => bp);
+        if (filledBulletPoints.length > 0) {
+          weeklySummary += '**Key Points:**\n';
+          filledBulletPoints.forEach(point => {
+            weeklySummary += `- ${point}\n`;
+          });
+          weeklySummary += '\n';
+        }
+        
+        weeklySummary += '---\n\n';
+        finalMarkdown = weeklySummary + markdown;
+      }
+
       // Call the onSave callback with the markdown content and filename
-      await onSave(username, fileName, markdown);
+      await onSave(username, fileName, finalMarkdown);
 
       // Clear the editor and close it
       setMarkdown('');
+      setWeeklyData({
+        pagesRead: '',
+        pocsCompleted: '',
+        bulletPoints: ['', '', '']
+      });
       setIsOpen(false);
 
       // If we were editing, call the cancel edit callback
@@ -90,6 +130,11 @@ function MarkdownEditor({ username, onSave, editingPost, onCancelEdit, forceOpen
     console.log('Cancel button clicked');
     setIsOpen(false);
     setMarkdown('');
+    setWeeklyData({
+      pagesRead: '',
+      pocsCompleted: '',
+      bulletPoints: ['', '', '']
+    });
     setError(null);
 
     // If we were editing, call the cancel edit callback
@@ -142,6 +187,58 @@ function MarkdownEditor({ username, onSave, editingPost, onCancelEdit, forceOpen
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
+                </div>
+
+                {/* Weekly Summary Form */}
+                <div className="mb-6 bg-[#0f172a] border border-[#334155] rounded-lg p-4">
+                  <h4 className="text-lg font-medium text-white mb-4">📊 Weekly Summary</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-1">
+                        Pages Read This Week
+                      </label>
+                      <input
+                        type="number"
+                        value={weeklyData.pagesRead}
+                        onChange={(e) => setWeeklyData({...weeklyData, pagesRead: e.target.value})}
+                        className="w-full px-3 py-2 bg-[#1e293b] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                        placeholder="e.g., 45"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-1">
+                        POCs Completed This Week
+                      </label>
+                      <input
+                        type="number"
+                        value={weeklyData.pocsCompleted}
+                        onChange={(e) => setWeeklyData({...weeklyData, pocsCompleted: e.target.value})}
+                        className="w-full px-3 py-2 bg-[#1e293b] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                        placeholder="e.g., 2"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">
+                      3 Key Points
+                    </label>
+                    <div className="space-y-2">
+                      {[0, 1, 2].map(index => (
+                        <input
+                          key={index}
+                          type="text"
+                          value={weeklyData.bulletPoints[index]}
+                          onChange={(e) => {
+                            const newBulletPoints = [...weeklyData.bulletPoints];
+                            newBulletPoints[index] = e.target.value;
+                            setWeeklyData({...weeklyData, bulletPoints: newBulletPoints});
+                          }}
+                          className="w-full px-3 py-2 bg-[#1e293b] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                          placeholder={`Key point ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
               <textarea
