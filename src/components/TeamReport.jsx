@@ -154,11 +154,20 @@ function TeamReport({ users, corporateUsers, onClose }) {
     const initialWeeklyData = {};
     users.forEach(username => {
       initialWeeklyData[username] = {
-        pagesRead: '',
-        pocsCompleted: '',
-        bulletPoints: ['', '', ''],
-        feedbackDate1: '',
-        feedbackDate2: ''
+        personalCommitsThisWeek: '',
+        personalCommitsLastWeek: '',
+        corporateCommitsThisWeek: '',
+        corporateCommitsLastWeek: '',
+        pagesThisWeek: '',
+        pagesLastWeek: '',
+        managerFeedbackDate: '',
+        pocsThisWeek: '',
+        pocsLastWeek: '',
+        projectPRsThisWeek: '',
+        projectPRsLastWeek: '',
+        slackContributionsThisWeek: '',
+        slackContributionsLastWeek: '',
+        keyFindings: ['', '', '']
       };
     });
     setWeeklyData(initialWeeklyData);
@@ -168,8 +177,8 @@ function TeamReport({ users, corporateUsers, onClose }) {
   const updateWeeklyData = (username, field, value, index = null) => {
     setWeeklyData(prev => {
       const updated = { ...prev };
-      if (field === 'bulletPoints') {
-        updated[username].bulletPoints[index] = value;
+      if (field === 'keyFindings' && index !== null) {
+        updated[username].keyFindings[index] = value;
       } else {
         updated[username][field] = value;
       }
@@ -220,29 +229,35 @@ function TeamReport({ users, corporateUsers, onClose }) {
 
         // Add weekly information if available
         const userWeeklyData = weeklyData[userData.username];
-        if (userWeeklyData && (userWeeklyData.pagesRead || userWeeklyData.pocsCompleted || userWeeklyData.bulletPoints.some(bp => bp) || userWeeklyData.feedbackDate1 || userWeeklyData.feedbackDate2)) {
-          markdown += `**This Week:**\n`;
-          if (userWeeklyData.pagesRead) {
-            markdown += `- Pages Read: ${userWeeklyData.pagesRead}\n`;
+        if (userWeeklyData && Object.values(userWeeklyData).some(val => Array.isArray(val) ? val.some(v => v) : val)) {
+          markdown += `**Weekly Summary:**\n`;
+          if (userWeeklyData.personalCommitsThisWeek || userWeeklyData.personalCommitsLastWeek) {
+            markdown += `- Personal Commits: ${userWeeklyData.personalCommitsThisWeek || '0'}/${userWeeklyData.personalCommitsLastWeek || '0'}\n`;
           }
-          if (userWeeklyData.pocsCompleted) {
-            markdown += `- POCs Completed: ${userWeeklyData.pocsCompleted}\n`;
+          if (userWeeklyData.corporateCommitsThisWeek || userWeeklyData.corporateCommitsLastWeek) {
+            markdown += `- Corporate Commits: ${userWeeklyData.corporateCommitsThisWeek || '0'}/${userWeeklyData.corporateCommitsLastWeek || '0'}\n`;
           }
-          const filledBulletPoints = userWeeklyData.bulletPoints.filter(bp => bp);
-          if (filledBulletPoints.length > 0) {
-            markdown += `- Key Points:\n`;
-            filledBulletPoints.forEach(point => {
-              markdown += `  - ${point}\n`;
+          if (userWeeklyData.pagesThisWeek || userWeeklyData.pagesLastWeek) {
+            markdown += `- Pages: ${userWeeklyData.pagesThisWeek || '0'}/${userWeeklyData.pagesLastWeek || '0'}\n`;
+          }
+          if (userWeeklyData.managerFeedbackDate) {
+            markdown += `- Manager Feedback Date: ${userWeeklyData.managerFeedbackDate}\n`;
+          }
+          if (userWeeklyData.pocsThisWeek || userWeeklyData.pocsLastWeek) {
+            markdown += `- Program POCs: ${userWeeklyData.pocsThisWeek || '0'}/${userWeeklyData.pocsLastWeek || '0'}\n`;
+          }
+          if (userWeeklyData.projectPRsThisWeek || userWeeklyData.projectPRsLastWeek) {
+            markdown += `- Project PRs: ${userWeeklyData.projectPRsThisWeek || '0'}/${userWeeklyData.projectPRsLastWeek || '0'}\n`;
+          }
+          if (userWeeklyData.slackContributionsThisWeek || userWeeklyData.slackContributionsLastWeek) {
+            markdown += `- Slack Contributions: ${userWeeklyData.slackContributionsThisWeek || '0'}/${userWeeklyData.slackContributionsLastWeek || '0'}\n`;
+          }
+          const filledKeyFindings = userWeeklyData.keyFindings.filter(kf => kf);
+          if (filledKeyFindings.length > 0) {
+            markdown += `\n**Key Findings:**\n`;
+            filledKeyFindings.forEach(finding => {
+              markdown += `- ${finding}\n`;
             });
-          }
-          if (userWeeklyData.feedbackDate1 || userWeeklyData.feedbackDate2) {
-            markdown += `- Feedback Sessions:\n`;
-            if (userWeeklyData.feedbackDate1) {
-              markdown += `  - ${userWeeklyData.feedbackDate1}\n`;
-            }
-            if (userWeeklyData.feedbackDate2) {
-              markdown += `  - ${userWeeklyData.feedbackDate2}\n`;
-            }
           }
           markdown += `\n`;
         }
@@ -639,73 +654,205 @@ For more detailed analytics and visualizations, access the full dashboard.`;
         {/* Weekly Information Form */}
         {showWeeklyForm && !isLoading && (
           <div className="mb-6 bg-[#0f172a] border border-[#334155] rounded-lg p-4">
-            <h3 className="text-xl font-semibold text-white mb-4">Weekly Information</h3>
+            <h3 className="text-xl font-semibold text-white mb-4">Weekly Summary (This Week / Last Week)</h3>
             <div className="space-y-6">
               {users.map(username => (
                 <div key={username} className="bg-[#1e293b] border border-[#334155] rounded-lg p-4">
                   <h4 className="text-lg font-medium text-white mb-3">{username}</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-1">
-                        Pages Read This Week
-                      </label>
-                      <input
-                        type="number"
-                        value={weeklyData[username]?.pagesRead || ''}
-                        onChange={(e) => updateWeeklyData(username, 'pagesRead', e.target.value)}
-                        className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
-                        placeholder="e.g., 45"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-1">
-                        POCs Completed This Week
-                      </label>
-                      <input
-                        type="number"
-                        value={weeklyData[username]?.pocsCompleted || ''}
-                        onChange={(e) => updateWeeklyData(username, 'pocsCompleted', e.target.value)}
-                        className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
-                        placeholder="e.g., 2"
-                      />
+                  
+                  {/* Commits Section */}
+                  <div className="mb-4">
+                    <h5 className="text-md font-medium text-gray-300 mb-2">Commits</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">
+                          Personal (This Week / Last Week)
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            value={weeklyData[username]?.personalCommitsThisWeek || ''}
+                            onChange={(e) => updateWeeklyData(username, 'personalCommitsThisWeek', e.target.value)}
+                            className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                            placeholder="This week"
+                          />
+                          <span className="text-white self-center">/</span>
+                          <input
+                            type="number"
+                            value={weeklyData[username]?.personalCommitsLastWeek || ''}
+                            onChange={(e) => updateWeeklyData(username, 'personalCommitsLastWeek', e.target.value)}
+                            className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                            placeholder="Last week"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">
+                          Corporate (This Week / Last Week)
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            value={weeklyData[username]?.corporateCommitsThisWeek || ''}
+                            onChange={(e) => updateWeeklyData(username, 'corporateCommitsThisWeek', e.target.value)}
+                            className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                            placeholder="This week"
+                          />
+                          <span className="text-white self-center">/</span>
+                          <input
+                            type="number"
+                            value={weeklyData[username]?.corporateCommitsLastWeek || ''}
+                            onChange={(e) => updateWeeklyData(username, 'corporateCommitsLastWeek', e.target.value)}
+                            className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                            placeholder="Last week"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">
-                      3 Bullet Points
-                    </label>
+
+                  {/* Pages Section */}
+                  <div className="mb-4">
+                    <h5 className="text-md font-medium text-gray-300 mb-2">Pages</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">
+                          This Week / Last Week
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            value={weeklyData[username]?.pagesThisWeek || ''}
+                            onChange={(e) => updateWeeklyData(username, 'pagesThisWeek', e.target.value)}
+                            className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                            placeholder="This week"
+                          />
+                          <span className="text-white self-center">/</span>
+                          <input
+                            type="number"
+                            value={weeklyData[username]?.pagesLastWeek || ''}
+                            onChange={(e) => updateWeeklyData(username, 'pagesLastWeek', e.target.value)}
+                            className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                            placeholder="Last week"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">
+                          Manager Feedback Date
+                        </label>
+                        <input
+                          type="text"
+                          value={weeklyData[username]?.managerFeedbackDate || ''}
+                          onChange={(e) => updateWeeklyData(username, 'managerFeedbackDate', e.target.value)}
+                          className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                          placeholder="e.g., Jan 15, 2026"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Program POCs Section */}
+                  <div className="mb-4">
+                    <h5 className="text-md font-medium text-gray-300 mb-2">Program POCs</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">
+                          This Week / Last Week
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            value={weeklyData[username]?.pocsThisWeek || ''}
+                            onChange={(e) => updateWeeklyData(username, 'pocsThisWeek', e.target.value)}
+                            className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                            placeholder="This week"
+                          />
+                          <span className="text-white self-center">/</span>
+                          <input
+                            type="number"
+                            value={weeklyData[username]?.pocsLastWeek || ''}
+                            onChange={(e) => updateWeeklyData(username, 'pocsLastWeek', e.target.value)}
+                            className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                            placeholder="Last week"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Project PRs Section */}
+                  <div className="mb-4">
+                    <h5 className="text-md font-medium text-gray-300 mb-2">Project PRs</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">
+                          This Week / Last Week
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            value={weeklyData[username]?.projectPRsThisWeek || ''}
+                            onChange={(e) => updateWeeklyData(username, 'projectPRsThisWeek', e.target.value)}
+                            className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                            placeholder="This week"
+                          />
+                          <span className="text-white self-center">/</span>
+                          <input
+                            type="number"
+                            value={weeklyData[username]?.projectPRsLastWeek || ''}
+                            onChange={(e) => updateWeeklyData(username, 'projectPRsLastWeek', e.target.value)}
+                            className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                            placeholder="Last week"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Slack Contributions Section */}
+                  <div className="mb-4">
+                    <h5 className="text-md font-medium text-gray-300 mb-2">Slack Contributions</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">
+                          This Week / Last Week
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            value={weeklyData[username]?.slackContributionsThisWeek || ''}
+                            onChange={(e) => updateWeeklyData(username, 'slackContributionsThisWeek', e.target.value)}
+                            className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                            placeholder="This week"
+                          />
+                          <span className="text-white self-center">/</span>
+                          <input
+                            type="number"
+                            value={weeklyData[username]?.slackContributionsLastWeek || ''}
+                            onChange={(e) => updateWeeklyData(username, 'slackContributionsLastWeek', e.target.value)}
+                            className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
+                            placeholder="Last week"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Key Findings Section */}
+                  <div className="mb-4">
+                    <h5 className="text-md font-medium text-gray-300 mb-2">Key Findings</h5>
                     <div className="space-y-2">
                       {[0, 1, 2].map(index => (
                         <input
                           key={index}
                           type="text"
-                          value={weeklyData[username]?.bulletPoints[index] || ''}
-                          onChange={(e) => updateWeeklyData(username, 'bulletPoints', e.target.value, index)}
+                          value={weeklyData[username]?.keyFindings[index] || ''}
+                          onChange={(e) => updateWeeklyData(username, 'keyFindings', e.target.value, index)}
                           className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
-                          placeholder={`Bullet point ${index + 1}`}
+                          placeholder={`Key finding ${index + 1}`}
                         />
                       ))}
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <label className="block text-sm text-gray-400 mb-2">
-                      Last 2 Feedback Sessions with Manager
-                    </label>
-                    <div className="space-y-2">
-                      <input
-                        type="text"
-                        value={weeklyData[username]?.feedbackDate1 || ''}
-                        onChange={(e) => updateWeeklyData(username, 'feedbackDate1', e.target.value)}
-                        className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
-                        placeholder="Most recent feedback session (e.g., Jan 10, 2026)"
-                      />
-                      <input
-                        type="text"
-                        value={weeklyData[username]?.feedbackDate2 || ''}
-                        onChange={(e) => updateWeeklyData(username, 'feedbackDate2', e.target.value)}
-                        className="w-full px-3 py-2 bg-[#0f172a] border border-[#334155] rounded text-white focus:outline-none focus:border-[#4ade80]"
-                        placeholder="Previous feedback session (e.g., Dec 28, 2025)"
-                      />
                     </div>
                   </div>
                 </div>
@@ -783,64 +930,92 @@ For more detailed analytics and visualizations, access the full dashboard.`;
                 </div>
 
                 {/* Weekly Information Section */}
-                {weeklyData[userData.username] && (
-                  weeklyData[userData.username].pagesRead || 
-                  weeklyData[userData.username].pocsCompleted || 
-                  weeklyData[userData.username].bulletPoints.some(bp => bp) ||
-                  weeklyData[userData.username].feedbackDate1 ||
-                  weeklyData[userData.username].feedbackDate2
-                ) && (
+                {weeklyData[userData.username] && Object.values(weeklyData[userData.username]).some(val => Array.isArray(val) ? val.some(v => v) : val) && (
                   <div className="bg-[#1e293b] border border-[#334155] rounded-lg p-4 mb-4">
-                    <h4 className="text-lg font-medium text-white mb-3">📊 This Week</h4>
-                    <div className="grid grid-cols-2 gap-4 mb-3">
-                      {weeklyData[userData.username].pagesRead && (
-                        <div>
-                          <p className="text-sm text-gray-400">Pages Read</p>
-                          <p className="text-xl font-semibold text-[#4ade80]">
-                            {weeklyData[userData.username].pagesRead}
+                    <h4 className="text-lg font-medium text-white mb-3">📊 Weekly Summary</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      {/* Commits */}
+                      {(weeklyData[userData.username].personalCommitsThisWeek || weeklyData[userData.username].personalCommitsLastWeek) && (
+                        <div className="bg-[#0f172a] rounded-lg p-3">
+                          <p className="text-sm text-gray-400 mb-1">Personal Commits</p>
+                          <p className="text-2xl font-semibold text-[#4ade80]">
+                            {weeklyData[userData.username].personalCommitsThisWeek || '0'}/{weeklyData[userData.username].personalCommitsLastWeek || '0'}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
+                        </div>
+                      )}
+                      {(weeklyData[userData.username].corporateCommitsThisWeek || weeklyData[userData.username].corporateCommitsLastWeek) && (
+                        <div className="bg-[#0f172a] rounded-lg p-3">
+                          <p className="text-sm text-gray-400 mb-1">Corporate Commits</p>
+                          <p className="text-2xl font-semibold text-[#4ade80]">
+                            {weeklyData[userData.username].corporateCommitsThisWeek || '0'}/{weeklyData[userData.username].corporateCommitsLastWeek || '0'}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
+                        </div>
+                      )}
+                      {/* Pages */}
+                      {(weeklyData[userData.username].pagesThisWeek || weeklyData[userData.username].pagesLastWeek) && (
+                        <div className="bg-[#0f172a] rounded-lg p-3">
+                          <p className="text-sm text-gray-400 mb-1">Pages</p>
+                          <p className="text-2xl font-semibold text-[#4ade80]">
+                            {weeklyData[userData.username].pagesThisWeek || '0'}/{weeklyData[userData.username].pagesLastWeek || '0'}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
+                        </div>
+                      )}
+                      {/* Manager Feedback Date */}
+                      {weeklyData[userData.username].managerFeedbackDate && (
+                        <div className="bg-[#0f172a] rounded-lg p-3">
+                          <p className="text-sm text-gray-400 mb-1">Manager Feedback Date</p>
+                          <p className="text-lg font-semibold text-white">
+                            {weeklyData[userData.username].managerFeedbackDate}
                           </p>
                         </div>
                       )}
-                      {weeklyData[userData.username].pocsCompleted && (
-                        <div>
-                          <p className="text-sm text-gray-400">POCs Completed</p>
-                          <p className="text-xl font-semibold text-[#4ade80]">
-                            {weeklyData[userData.username].pocsCompleted}
+                      {/* Program POCs */}
+                      {(weeklyData[userData.username].pocsThisWeek || weeklyData[userData.username].pocsLastWeek) && (
+                        <div className="bg-[#0f172a] rounded-lg p-3">
+                          <p className="text-sm text-gray-400 mb-1">Program POCs</p>
+                          <p className="text-2xl font-semibold text-[#4ade80]">
+                            {weeklyData[userData.username].pocsThisWeek || '0'}/{weeklyData[userData.username].pocsLastWeek || '0'}
                           </p>
+                          <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
+                        </div>
+                      )}
+                      {/* Project PRs */}
+                      {(weeklyData[userData.username].projectPRsThisWeek || weeklyData[userData.username].projectPRsLastWeek) && (
+                        <div className="bg-[#0f172a] rounded-lg p-3">
+                          <p className="text-sm text-gray-400 mb-1">Project PRs</p>
+                          <p className="text-2xl font-semibold text-[#4ade80]">
+                            {weeklyData[userData.username].projectPRsThisWeek || '0'}/{weeklyData[userData.username].projectPRsLastWeek || '0'}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
+                        </div>
+                      )}
+                      {/* Slack Contributions */}
+                      {(weeklyData[userData.username].slackContributionsThisWeek || weeklyData[userData.username].slackContributionsLastWeek) && (
+                        <div className="bg-[#0f172a] rounded-lg p-3">
+                          <p className="text-sm text-gray-400 mb-1">Slack Contributions</p>
+                          <p className="text-2xl font-semibold text-[#4ade80]">
+                            {weeklyData[userData.username].slackContributionsThisWeek || '0'}/{weeklyData[userData.username].slackContributionsLastWeek || '0'}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
                         </div>
                       )}
                     </div>
-                    {weeklyData[userData.username].bulletPoints.some(bp => bp) && (
-                      <div className="mb-3">
-                        <p className="text-sm text-gray-400 mb-2">Key Points</p>
-                        <ul className="space-y-1">
-                          {weeklyData[userData.username].bulletPoints
-                            .filter(bp => bp)
-                            .map((point, idx) => (
+                    {/* Key Findings */}
+                    {weeklyData[userData.username].keyFindings.some(kf => kf) && (
+                      <div className="mt-4 pt-4 border-t border-[#334155]">
+                        <p className="text-sm text-gray-400 mb-3 font-medium">Key Findings</p>
+                        <ul className="space-y-2">
+                          {weeklyData[userData.username].keyFindings
+                            .filter(kf => kf)
+                            .map((finding, idx) => (
                               <li key={idx} className="text-white flex items-start gap-2">
-                                <span className="text-[#4ade80] mt-1">•</span>
-                                <span>{point}</span>
+                                <span className="text-[#4ade80] mt-1 text-lg">•</span>
+                                <span className="flex-1">{finding}</span>
                               </li>
                             ))}
-                        </ul>
-                      </div>
-                    )}
-                    {(weeklyData[userData.username].feedbackDate1 || weeklyData[userData.username].feedbackDate2) && (
-                      <div>
-                        <p className="text-sm text-gray-400 mb-2">Feedback Sessions</p>
-                        <ul className="space-y-1">
-                          {weeklyData[userData.username].feedbackDate1 && (
-                            <li className="text-white flex items-start gap-2">
-                              <span className="text-[#4ade80] mt-1">•</span>
-                              <span>{weeklyData[userData.username].feedbackDate1}</span>
-                            </li>
-                          )}
-                          {weeklyData[userData.username].feedbackDate2 && (
-                            <li className="text-white flex items-start gap-2">
-                              <span className="text-[#4ade80] mt-1">•</span>
-                              <span>{weeklyData[userData.username].feedbackDate2}</span>
-                            </li>
-                          )}
                         </ul>
                       </div>
                     )}
