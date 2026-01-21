@@ -103,7 +103,13 @@ const ReadingManager = ({ selectedUser, onReadingChange }) => {
       wouldRecommend: book?.wouldRecommend !== false,
       progress: book?.progress || 0,
       startDate: book?.startDate || new Date().toISOString().split('T')[0],
-      completedDate: book?.completedDate || new Date().toISOString().split('T')[0]
+      completedDate: book?.completedDate || new Date().toISOString().split('T')[0],
+      pageCount: book?.pageCount || 0,
+      currentPage: book?.currentPage || 0,
+      weeklyPages: {
+        thisWeek: book?.weeklyPages?.thisWeek || 0,
+        lastWeek: book?.weeklyPages?.lastWeek || 0
+      }
     });
 
     const handleSubmit = (e) => {
@@ -161,51 +167,123 @@ const ReadingManager = ({ selectedUser, onReadingChange }) => {
         </div>
 
         {isCurrentReading ? (
-          <div className="grid grid-cols-2 gap-4">
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Progress (%)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.progress}
+                  onChange={(e) => setFormData({ ...formData, progress: parseInt(e.target.value) || 0 })}
+                  className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Start Date</label>
+                <input
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Total Pages</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.pageCount}
+                  onChange={(e) => setFormData({ ...formData, pageCount: parseInt(e.target.value) || 0 })}
+                  className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                  placeholder="e.g., 432"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Current Page</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.currentPage}
+                  onChange={(e) => setFormData({ ...formData, currentPage: parseInt(e.target.value) || 0 })}
+                  className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                  placeholder="e.g., 280"
+                />
+              </div>
+            </div>
+            <div className="border-t pt-4 mt-4">
+              <h5 className="text-sm font-medium mb-3">Weekly Pages Read</h5>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">This Week</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.weeklyPages.thisWeek}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      weeklyPages: { ...formData.weeklyPages, thisWeek: parseInt(e.target.value) || 0 }
+                    })}
+                    className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                    placeholder="e.g., 45"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Last Week</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.weeklyPages.lastWeek}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      weeklyPages: { ...formData.weeklyPages, lastWeek: parseInt(e.target.value) || 0 }
+                    })}
+                    className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                    placeholder="e.g., 62"
+                  />
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Rating (1-5)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={formData.rating}
+                  onChange={(e) => setFormData({ ...formData, rating: parseInt(e.target.value) || 5 })}
+                  className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Completed Date</label>
+                <input
+                  type="date"
+                  value={formData.completedDate}
+                  onChange={(e) => setFormData({ ...formData, completedDate: e.target.value })}
+                  className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+            </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Progress (%)</label>
+              <label className="block text-sm font-medium mb-1">Total Pages</label>
               <input
                 type="number"
                 min="0"
-                max="100"
-                value={formData.progress}
-                onChange={(e) => setFormData({ ...formData, progress: parseInt(e.target.value) || 0 })}
+                value={formData.pageCount}
+                onChange={(e) => setFormData({ ...formData, pageCount: parseInt(e.target.value) || 0 })}
                 className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                placeholder="e.g., 464"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Start Date</label>
-              <input
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Rating (1-5)</label>
-              <input
-                type="number"
-                min="1"
-                max="5"
-                value={formData.rating}
-                onChange={(e) => setFormData({ ...formData, rating: parseInt(e.target.value) || 5 })}
-                className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Completed Date</label>
-              <input
-                type="date"
-                value={formData.completedDate}
-                onChange={(e) => setFormData({ ...formData, completedDate: e.target.value })}
-                className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-              />
-            </div>
-          </div>
+          </>
         )}
 
         <div>
@@ -347,6 +425,30 @@ const ReadingManager = ({ selectedUser, onReadingChange }) => {
                     </div>
                   </div>
                 </div>
+                {(readingData.currentlyReading.pageCount || readingData.currentlyReading.currentPage) && (
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    {readingData.currentlyReading.currentPage && readingData.currentlyReading.pageCount ? (
+                      <span>Page {readingData.currentlyReading.currentPage} of {readingData.currentlyReading.pageCount}</span>
+                    ) : readingData.currentlyReading.pageCount ? (
+                      <span>{readingData.currentlyReading.pageCount} pages</span>
+                    ) : null}
+                  </div>
+                )}
+                {readingData.currentlyReading.weeklyPages && (readingData.currentlyReading.weeklyPages.thisWeek > 0 || readingData.currentlyReading.weeklyPages.lastWeek > 0) && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded p-2 mb-2">
+                    <div className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Weekly Pages</div>
+                    <div className="flex gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-500">This week:</span>
+                        <span className="font-medium ml-1">{readingData.currentlyReading.weeklyPages.thisWeek}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Last week:</span>
+                        <span className="font-medium ml-1">{readingData.currentlyReading.weeklyPages.lastWeek}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {readingData.currentlyReading.notes && (
                   <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
                     {readingData.currentlyReading.notes}

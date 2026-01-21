@@ -63,6 +63,54 @@ const getCommitsForWeek = (contributionData, weeksAgo = 0) => {
   return totalCommits;
 };
 
+// Helper function to calculate pages read per week from reading data
+const getPagesReadForWeek = (readingData, weeksAgo = 0) => {
+  if (!readingData) return 0;
+  
+  const today = new Date();
+  let startDate, endDate;
+  
+  if (weeksAgo === 0) {
+    // This week: from (now - 6 days) to now
+    startDate = new Date(today);
+    startDate.setDate(today.getDate() - 6);
+    endDate = new Date(today);
+  } else if (weeksAgo === 1) {
+    // Last week: from (now - 13 days) to (now - 7 days)
+    startDate = new Date(today);
+    startDate.setDate(today.getDate() - 13);
+    endDate = new Date(today);
+    endDate.setDate(today.getDate() - 7);
+  } else {
+    return 0;
+  }
+  
+  let totalPages = 0;
+  
+  // Check books completed in the time period
+  if (readingData.booksRead && readingData.booksRead.length > 0) {
+    readingData.booksRead.forEach(book => {
+      if (book.completedDate && book.pageCount) {
+        const completedDate = new Date(book.completedDate);
+        if (completedDate >= startDate && completedDate <= endDate) {
+          totalPages += book.pageCount;
+        }
+      }
+    });
+  }
+  
+  // For currently reading book, if it has weekly page tracking
+  if (readingData.currentlyReading && readingData.currentlyReading.weeklyPages) {
+    const weeklyPagesData = readingData.currentlyReading.weeklyPages;
+    const weekKey = weeksAgo === 0 ? 'thisWeek' : 'lastWeek';
+    if (weeklyPagesData[weekKey]) {
+      totalPages += weeklyPagesData[weekKey];
+    }
+  }
+  
+  return totalPages;
+};
+
 function TeamReport({ users, corporateUsers, onClose }) {
   const [isLoading, setIsLoading] = useState(true);
   const [teamData, setTeamData] = useState([]);
@@ -621,13 +669,16 @@ For more detailed analytics and visualizations, access the full dashboard.`;
         // Calculate weekly data from contribution data
         const calculatedWeeklyData = {};
         userData.forEach(user => {
+          const pagesThisWeek = getPagesReadForWeek(user.readingData, 0);
+          const pagesLastWeek = getPagesReadForWeek(user.readingData, 1);
+          
           calculatedWeeklyData[user.username] = {
             personalCommitsThisWeek: getCommitsForWeek(user.personalData, 0).toString(),
             personalCommitsLastWeek: getCommitsForWeek(user.personalData, 1).toString(),
             corporateCommitsThisWeek: getCommitsForWeek(user.corporateData, 0).toString(),
             corporateCommitsLastWeek: getCommitsForWeek(user.corporateData, 1).toString(),
-            pagesThisWeek: '',
-            pagesLastWeek: '',
+            pagesThisWeek: pagesThisWeek > 0 ? pagesThisWeek.toString() : '',
+            pagesLastWeek: pagesLastWeek > 0 ? pagesLastWeek.toString() : '',
             managerFeedbackDate: '',
             pocsThisWeek: '',
             pocsLastWeek: '',
