@@ -14,23 +14,6 @@ const getCommitsForWeek = (contributionData, weeksAgo = 0) => {
     return 0;
   }
   
-  // Find the most recent Tuesday (or today if today is Tuesday)
-  const today = new Date();
-  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, 2 = Tuesday, etc.
-  const daysSinceTuesday = (dayOfWeek + 5) % 7; // Days since last Tuesday
-  
-  const mostRecentTuesday = new Date(today);
-  mostRecentTuesday.setDate(today.getDate() - daysSinceTuesday);
-  mostRecentTuesday.setHours(0, 0, 0, 0);
-  
-  // Calculate the target Tuesday (this week or previous weeks)
-  const targetTuesday = new Date(mostRecentTuesday);
-  targetTuesday.setDate(mostRecentTuesday.getDate() - (weeksAgo * 7));
-  
-  // Calculate the end date (next Monday, inclusive)
-  const endDate = new Date(targetTuesday);
-  endDate.setDate(targetTuesday.getDate() + 6); // Tuesday + 6 days = Monday
-  
   // Convert to YYYY-MM-DD format for comparison
   const formatDate = (date) => {
     const year = date.getFullYear();
@@ -39,7 +22,30 @@ const getCommitsForWeek = (contributionData, weeksAgo = 0) => {
     return `${year}-${month}-${day}`;
   };
   
-  const startDateStr = formatDate(targetTuesday);
+  const today = new Date();
+  let startDate, endDate;
+  
+  if (weeksAgo === 0) {
+    // This week: from (now - 6 days) to now
+    startDate = new Date(today);
+    startDate.setDate(today.getDate() - 6);
+    endDate = new Date(today);
+  } else if (weeksAgo === 1) {
+    // Last week: from (now - 13 days) to (now - 7 days)
+    startDate = new Date(today);
+    startDate.setDate(today.getDate() - 13);
+    endDate = new Date(today);
+    endDate.setDate(today.getDate() - 7);
+  } else {
+    // For other weeks, calculate accordingly
+    const daysBack = 6 + (weeksAgo * 7);
+    startDate = new Date(today);
+    startDate.setDate(today.getDate() - daysBack);
+    endDate = new Date(today);
+    endDate.setDate(today.getDate() - (daysBack - 6));
+  }
+  
+  const startDateStr = formatDate(startDate);
   const endDateStr = formatDate(endDate);
   
   // Flatten all contribution days and filter by date range
