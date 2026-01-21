@@ -30,7 +30,17 @@ const getCommitsForWeek = (contributionData, weeksAgo = 0) => {
   // Calculate the end date (next Monday, inclusive)
   const endDate = new Date(targetTuesday);
   endDate.setDate(targetTuesday.getDate() + 6); // Tuesday + 6 days = Monday
-  endDate.setHours(23, 59, 59, 999);
+  
+  // Convert to YYYY-MM-DD format for comparison
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
+  const startDateStr = formatDate(targetTuesday);
+  const endDateStr = formatDate(endDate);
   
   // Flatten all contribution days and filter by date range
   const weeks = contributionData.data.user.contributionsCollection.contributionCalendar.weeks;
@@ -38,8 +48,7 @@ const getCommitsForWeek = (contributionData, weeksAgo = 0) => {
   
   weeks.forEach(week => {
     week.contributionDays.forEach(day => {
-      const dayDate = new Date(day.date);
-      if (dayDate >= targetTuesday && dayDate <= endDate) {
+      if (day.date >= startDateStr && day.date <= endDateStr) {
         totalCommits += day.contributionCount;
       }
     });
