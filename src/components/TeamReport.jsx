@@ -8,6 +8,23 @@ import GitHubContributionGraph from './GitHubContributionGraph';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
+// Helper function to calculate commits for a specific week
+const getCommitsForWeek = (contributionData, weeksAgo = 0) => {
+  if (!contributionData?.data?.user?.contributionsCollection?.contributionCalendar?.weeks) {
+    return 0;
+  }
+  
+  const weeks = contributionData.data.user.contributionsCollection.contributionCalendar.weeks;
+  const targetWeekIndex = weeks.length - 1 - weeksAgo;
+  
+  if (targetWeekIndex < 0 || targetWeekIndex >= weeks.length) {
+    return 0;
+  }
+  
+  const week = weeks[targetWeekIndex];
+  return week.contributionDays.reduce((sum, day) => sum + day.contributionCount, 0);
+};
+
 function TeamReport({ users, corporateUsers, onClose }) {
   const [isLoading, setIsLoading] = useState(true);
   const [teamData, setTeamData] = useState([]);
@@ -533,7 +550,9 @@ For more detailed analytics and visualizations, access the full dashboard.`;
               latestNote,
               reinforcements,
               readingData,
-              presentationData
+              presentationData,
+              personalData,
+              corporateData
             };
           } catch (err) {
             console.error(`Failed to fetch data for user ${username}:`, err);
@@ -547,7 +566,9 @@ For more detailed analytics and visualizations, access the full dashboard.`;
               reinforcements: null,
               readingData: null,
               presentationData: null,
-              error: err.message
+              error: err.message,
+              personalData: null,
+              corporateData: null
             };
           }
         }));
@@ -558,6 +579,28 @@ For more detailed analytics and visualizations, access the full dashboard.`;
           .map(result => result.value);
 
         setTeamData(userData);
+        
+        // Calculate weekly data from contribution data
+        const calculatedWeeklyData = {};
+        userData.forEach(user => {
+          calculatedWeeklyData[user.username] = {
+            personalCommitsThisWeek: getCommitsForWeek(user.personalData, 0).toString(),
+            personalCommitsLastWeek: getCommitsForWeek(user.personalData, 1).toString(),
+            corporateCommitsThisWeek: getCommitsForWeek(user.corporateData, 0).toString(),
+            corporateCommitsLastWeek: getCommitsForWeek(user.corporateData, 1).toString(),
+            pagesThisWeek: '',
+            pagesLastWeek: '',
+            managerFeedbackDate: '',
+            pocsThisWeek: '',
+            pocsLastWeek: '',
+            projectPRsThisWeek: '',
+            projectPRsLastWeek: '',
+            slackContributionsThisWeek: '',
+            slackContributionsLastWeek: '',
+            keyFindings: ['', '', '']
+          };
+        });
+        setWeeklyData(calculatedWeeklyData);
       } catch (err) {
         console.error('Error fetching team data:', err);
         setError('Failed to load team data. Please try again.');
