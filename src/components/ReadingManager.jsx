@@ -101,7 +101,6 @@ const ReadingManager = ({ selectedUser, onReadingChange }) => {
       notes: book?.notes || '',
       recommendedBy: book?.recommendedBy || 'Self-selected',
       wouldRecommend: book?.wouldRecommend !== false,
-      progress: book?.progress || 0,
       startDate: book?.startDate || new Date().toISOString().split('T')[0],
       completedDate: book?.completedDate || new Date().toISOString().split('T')[0],
       pageCount: book?.pageCount || 0,
@@ -112,9 +111,18 @@ const ReadingManager = ({ selectedUser, onReadingChange }) => {
       }
     });
 
+    // Calculate progress based on pages
+    const calculatedProgress = formData.pageCount > 0 
+      ? Math.round((formData.currentPage / formData.pageCount) * 100)
+      : 0;
+
     const handleSubmit = (e) => {
       e.preventDefault();
-      onSubmit(formData);
+      // Include calculated progress in submission
+      onSubmit({
+        ...formData,
+        progress: calculatedProgress
+      });
     };
 
     return (
@@ -170,28 +178,6 @@ const ReadingManager = ({ selectedUser, onReadingChange }) => {
           <>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Progress (%)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={formData.progress}
-                  onChange={(e) => setFormData({ ...formData, progress: parseInt(e.target.value) || 0 })}
-                  className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Start Date</label>
-                <input
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
                 <label className="block text-sm font-medium mb-1">Total Pages</label>
                 <input
                   type="number"
@@ -213,6 +199,31 @@ const ReadingManager = ({ selectedUser, onReadingChange }) => {
                   placeholder="e.g., 280"
                 />
               </div>
+            </div>
+            {formData.pageCount > 0 && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Progress</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-32 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                      <div 
+                        className="bg-blue-500 h-2 rounded-full transition-all"
+                        style={{ width: `${Math.min(calculatedProgress, 100)}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-semibold">{calculatedProgress}%</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div>
+              <label className="block text-sm font-medium mb-1">Start Date</label>
+              <input
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+              />
             </div>
             <div className="border-t pt-4 mt-4">
               <h5 className="text-sm font-medium mb-3">Weekly Pages Read</h5>
