@@ -8,21 +8,44 @@ import GitHubContributionGraph from './GitHubContributionGraph';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-// Helper function to calculate commits for a specific week
+// Helper function to calculate commits for a Tuesday-to-Tuesday week
 const getCommitsForWeek = (contributionData, weeksAgo = 0) => {
   if (!contributionData?.data?.user?.contributionsCollection?.contributionCalendar?.weeks) {
     return 0;
   }
   
+  // Find the most recent Tuesday (or today if today is Tuesday)
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, 2 = Tuesday, etc.
+  const daysSinceTuesday = (dayOfWeek + 5) % 7; // Days since last Tuesday
+  
+  const mostRecentTuesday = new Date(today);
+  mostRecentTuesday.setDate(today.getDate() - daysSinceTuesday);
+  mostRecentTuesday.setHours(0, 0, 0, 0);
+  
+  // Calculate the target Tuesday (this week or previous weeks)
+  const targetTuesday = new Date(mostRecentTuesday);
+  targetTuesday.setDate(mostRecentTuesday.getDate() - (weeksAgo * 7));
+  
+  // Calculate the end date (next Monday, inclusive)
+  const endDate = new Date(targetTuesday);
+  endDate.setDate(targetTuesday.getDate() + 6); // Tuesday + 6 days = Monday
+  endDate.setHours(23, 59, 59, 999);
+  
+  // Flatten all contribution days and filter by date range
   const weeks = contributionData.data.user.contributionsCollection.contributionCalendar.weeks;
-  const targetWeekIndex = weeks.length - 1 - weeksAgo;
+  let totalCommits = 0;
   
-  if (targetWeekIndex < 0 || targetWeekIndex >= weeks.length) {
-    return 0;
-  }
+  weeks.forEach(week => {
+    week.contributionDays.forEach(day => {
+      const dayDate = new Date(day.date);
+      if (dayDate >= targetTuesday && dayDate <= endDate) {
+        totalCommits += day.contributionCount;
+      }
+    });
+  });
   
-  const week = weeks[targetWeekIndex];
-  return week.contributionDays.reduce((sum, day) => sum + day.contributionCount, 0);
+  return totalCommits;
 };
 
 function TeamReport({ users, corporateUsers, onClose }) {
