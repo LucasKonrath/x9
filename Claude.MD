@@ -16,13 +16,13 @@
 ## Slash commands
 
 ### /insights
-Use this to summarize each member’s recent activity across JSON files and surface highlights.
+Use this to summarize each member’s recent activity from meeting logs and surface highlights.
 
 **Prompt**
-Analyze the team member data under public/. For each member folder: summarize key items from reading.json, presentations.json, and reinforcements.json; flag any missing files; and provide 2–3 insights or trends. Output a concise table and a short bullet list per member.
+Analyze the team member meeting logs under public/. For each member folder: read any yyyy-MM-dd.md files, summarize key points, action items, and risks; flag missing or empty logs; and provide 2–3 insights or trends. Output a concise table and a short bullet list per member.
 
 ### /compare-reports
-Use this to compare the two most recent dated `.md` reports in a member folder and extract summary deltas.
+Use this to compare the two most recent dated `.md` meeting logs in a member folder and extract summary deltas.
 
 **Prompt (single member)**
 In public/<member>/, find the two most recent *.md reports by date in filename. Compare them and extract summary data: top themes, changes in priorities, notable wins/risks, and action items. Output a brief diff-style summary and a JSON object with fields: member, reportA, reportB, themes, priorityChanges, wins, risks, actions.
