@@ -254,39 +254,89 @@ function TeamReport({ users, corporateUsers, onClose }) {
     }
   };
 
-  // Initialize weekly data for all users
+  // Load persisted weekly data for all users on mount
   useEffect(() => {
-    const initialWeeklyData = {};
-    users.forEach(username => {
-      initialWeeklyData[username] = {
-        personalCommitsThisWeek: '',
-        personalCommitsLastWeek: '',
-        corporateCommitsThisWeek: '',
-        corporateCommitsLastWeek: '',
-        pagesThisWeek: '',
-        pagesLastWeek: '',
-        managerFeedbackDate: '',
-        pocsThisWeek: '',
-        pocsLastWeek: '',
-        projectPRsThisWeek: '',
-        projectPRsLastWeek: '',
-        slackContributionsThisWeek: '',
-        slackContributionsLastWeek: '',
-        keyFindings: ['', '', '']
-      };
-    });
-    setWeeklyData(initialWeeklyData);
+    const loadWeeklyData = async () => {
+      const loaded = {};
+      await Promise.all(users.map(async (username) => {
+        try {
+          const res = await fetch(`http://localhost:3001/api/users/${username}/weekly`);
+          const saved = await res.json();
+          loaded[username] = saved || {
+            personalCommitsThisWeek: '',
+            personalCommitsLastWeek: '',
+            corporateCommitsThisWeek: '',
+            corporateCommitsLastWeek: '',
+            pagesThisWeek: '',
+            pagesLastWeek: '',
+            managerFeedbackDate: '',
+            pocsThisWeek: '',
+            pocsLastWeek: '',
+            projectPRsThisWeek: '',
+            projectPRsLastWeek: '',
+            slackContributionsThisWeek: '',
+            slackContributionsLastWeek: '',
+            keyFindings: ['', '', '']
+          };
+        } catch {
+          loaded[username] = {
+            personalCommitsThisWeek: '',
+            personalCommitsLastWeek: '',
+            corporateCommitsThisWeek: '',
+            corporateCommitsLastWeek: '',
+            pagesThisWeek: '',
+            pagesLastWeek: '',
+            managerFeedbackDate: '',
+            pocsThisWeek: '',
+            pocsLastWeek: '',
+            projectPRsThisWeek: '',
+            projectPRsLastWeek: '',
+            slackContributionsThisWeek: '',
+            slackContributionsLastWeek: '',
+            keyFindings: ['', '', '']
+          };
+        }
+      }));
+      setWeeklyData(loaded);
+    };
+    loadWeeklyData();
   }, [users]);
 
-  // Update weekly data for a specific user
+  // Persist weekly data for a single user
+  const saveWeeklyDataForUser = async (username, data) => {
+    try {
+      await fetch(`http://localhost:3001/api/users/${username}/weekly`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    } catch (err) {
+      console.error(`Failed to save weekly data for ${username}:`, err);
+    }
+  };
+
+  // Debounce refs for auto-save
+  const saveTimers = useRef({});
+
+  // Update weekly data for a specific user (with auto-save)
   const updateWeeklyData = (username, field, value, index = null) => {
     setWeeklyData(prev => {
       const updated = { ...prev };
+      const userData = { ...updated[username] };
       if (field === 'keyFindings' && index !== null) {
-        updated[username].keyFindings[index] = value;
+        userData.keyFindings = [...userData.keyFindings];
+        userData.keyFindings[index] = value;
       } else {
-        updated[username][field] = value;
+        userData[field] = value;
       }
+      updated[username] = userData;
+
+      // Debounced auto-save (500ms)
+      if (saveTimers.current[username]) clearTimeout(saveTimers.current[username]);
+      saveTimers.current[username] = setTimeout(() => {
+        saveWeeklyDataForUser(username, userData);
+      }, 500);
+
       return updated;
     });
   };
@@ -668,30 +718,40 @@ For more detailed analytics and visualizations, access the full dashboard.`;
 
         setTeamData(userData);
         
-        // Calculate weekly data from contribution data
-        const calculatedWeeklyData = {};
-        userData.forEach(user => {
-          const pagesThisWeek = getPagesReadForWeek(user.readingData, 0);
-          const pagesLastWeek = getPagesReadForWeek(user.readingData, 1);
-          
-          calculatedWeeklyData[user.username] = {
-            personalCommitsThisWeek: getCommitsForWeek(user.personalData, 0).toString(),
-            personalCommitsLastWeek: getCommitsForWeek(user.personalData, 1).toString(),
-            corporateCommitsThisWeek: getCommitsForWeek(user.corporateData, 0).toString(),
-            corporateCommitsLastWeek: getCommitsForWeek(user.corporateData, 1).toString(),
-            pagesThisWeek: pagesThisWeek > 0 ? pagesThisWeek.toString() : '',
-            pagesLastWeek: pagesLastWeek > 0 ? pagesLastWeek.toString() : '',
-            managerFeedbackDate: '',
-            pocsThisWeek: '',
-            pocsLastWeek: '',
-            projectPRsThisWeek: '',
-            projectPRsLastWeek: '',
-            slackContributionsThisWeek: '',
-            slackContributionsLastWeek: '',
-            keyFindings: ['', '', '']
-          };
+        // Merge auto-calculated data with persisted weekly data
+        setWeeklyData(prev => {
+          const merged = { ...prev };
+          userData.forEach(user => {
+            const pagesThisWeek = getPagesReadForWeek(user.readingData, 0);
+            const pagesLastWeek = getPagesReadForWeek(user.readingData, 1);
+            const autoCalc = {
+              personalCommitsThisWeek: getCommitsForWeek(user.personalData, 0).toString(),
+              personalCommitsLastWeek: getCommitsForWeek(user.personalData, 1).toString(),
+              corporateCommitsThisWeek: getCommitsForWeek(user.corporateData, 0).toString(),
+              corporateCommitsLastWeek: getCommitsForWeek(user.corporateData, 1).toString(),
+              pagesThisWeek: pagesThisWeek > 0 ? pagesThisWeek.toString() : '',
+              pagesLastWeek: pagesLastWeek > 0 ? pagesLastWeek.toString() : '',
+            };
+            const existing = merged[user.username] || {};
+            merged[user.username] = {
+              ...{
+                managerFeedbackDate: '',
+                pocsThisWeek: '',
+                pocsLastWeek: '',
+                projectPRsThisWeek: '',
+                projectPRsLastWeek: '',
+                slackContributionsThisWeek: '',
+                slackContributionsLastWeek: '',
+                keyFindings: ['', '', '']
+              },
+              ...existing,  // persisted values win for manual fields
+              ...autoCalc   // always refresh auto-calculated fields
+            };
+            // Persist the merged result
+            saveWeeklyDataForUser(user.username, merged[user.username]);
+          });
+          return merged;
         });
-        setWeeklyData(calculatedWeeklyData);
       } catch (err) {
         console.error('Error fetching team data:', err);
         setError('Failed to load team data. Please try again.');

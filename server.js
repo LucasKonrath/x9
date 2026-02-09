@@ -656,6 +656,45 @@ app.get('/api/presentations/all', (req, res) => {
   }
 });
 
+// Weekly data persistence
+app.get('/api/users/:username/weekly', (req, res) => {
+  const username = req.params.username;
+  const weeklyFile = path.join(__dirname, 'public', username, 'weekly.json');
+
+  try {
+    if (!fs.existsSync(weeklyFile)) {
+      return res.json(null);
+    }
+    const data = JSON.parse(fs.readFileSync(weeklyFile, 'utf8'));
+    res.json(data);
+  } catch (error) {
+    console.error(`Error reading weekly data for ${username}:`, error);
+    res.status(500).json({ error: 'Error reading weekly data' });
+  }
+});
+
+app.put('/api/users/:username/weekly', (req, res) => {
+  const username = req.params.username;
+  const weeklyFile = path.join(__dirname, 'public', username, 'weekly.json');
+
+  try {
+    const userDir = path.join(__dirname, 'public', username);
+    if (!fs.existsSync(userDir)) {
+      fs.mkdirSync(userDir, { recursive: true });
+    }
+
+    const payload = {
+      ...req.body,
+      lastUpdated: new Date().toISOString()
+    };
+    fs.writeFileSync(weeklyFile, JSON.stringify(payload, null, 2));
+    res.json(payload);
+  } catch (error) {
+    console.error(`Error saving weekly data for ${username}:`, error);
+    res.status(500).json({ error: 'Error saving weekly data' });
+  }
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
