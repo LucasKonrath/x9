@@ -1124,81 +1124,79 @@ For more detailed analytics and visualizations, access the full dashboard.`;
                 </div>
 
                 {/* Weekly Information Section */}
-                {weeklyData[userData.username] && Object.values(weeklyData[userData.username]).some(val => Array.isArray(val) ? val.some(v => v) : val) && (
+                {weeklyData[userData.username] && (
                   <div className="bg-[#1e293b] border border-[#334155] rounded-lg p-4 mb-4">
                     <h4 className="text-lg font-medium text-white mb-3">📊 Weekly Summary</h4>
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       {/* Commits */}
-                      {(weeklyData[userData.username].personalCommitsThisWeek || weeklyData[userData.username].personalCommitsLastWeek) && (
-                        <div className="bg-[#0f172a] rounded-lg p-3">
-                          <p className="text-sm text-gray-400 mb-1">Personal Commits</p>
-                          <p className="text-2xl font-semibold text-[#4ade80]">
-                            {weeklyData[userData.username].personalCommitsThisWeek || '0'}/{weeklyData[userData.username].personalCommitsLastWeek || '0'}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
-                        </div>
-                      )}
-                      {(weeklyData[userData.username].corporateCommitsThisWeek || weeklyData[userData.username].corporateCommitsLastWeek) && (
-                        <div className="bg-[#0f172a] rounded-lg p-3">
-                          <p className="text-sm text-gray-400 mb-1">Corporate Commits</p>
-                          <p className="text-2xl font-semibold text-[#4ade80]">
-                            {weeklyData[userData.username].corporateCommitsThisWeek || '0'}/{weeklyData[userData.username].corporateCommitsLastWeek || '0'}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
-                        </div>
-                      )}
+                      <div className="bg-[#0f172a] rounded-lg p-3">
+                        <p className="text-sm text-gray-400 mb-1">Personal Commits</p>
+                        <p className={`text-2xl font-semibold ${(weeklyData[userData.username].personalCommitsThisWeek || weeklyData[userData.username].personalCommitsLastWeek) ? 'text-[#4ade80]' : 'text-gray-500'}`}>
+                          {(weeklyData[userData.username].personalCommitsThisWeek || weeklyData[userData.username].personalCommitsLastWeek)
+                            ? `${weeklyData[userData.username].personalCommitsThisWeek || '0'}/${weeklyData[userData.username].personalCommitsLastWeek || '0'}`
+                            : 'N/A'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
+                      </div>
+                      <div className="bg-[#0f172a] rounded-lg p-3">
+                        <p className="text-sm text-gray-400 mb-1">Corporate Commits</p>
+                        <p className={`text-2xl font-semibold ${(weeklyData[userData.username].corporateCommitsThisWeek || weeklyData[userData.username].corporateCommitsLastWeek) ? 'text-[#4ade80]' : 'text-gray-500'}`}>
+                          {(weeklyData[userData.username].corporateCommitsThisWeek || weeklyData[userData.username].corporateCommitsLastWeek)
+                            ? `${weeklyData[userData.username].corporateCommitsThisWeek || '0'}/${weeklyData[userData.username].corporateCommitsLastWeek || '0'}`
+                            : 'N/A'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
+                      </div>
                       {/* Pages */}
-                      {(weeklyData[userData.username].pagesThisWeek || weeklyData[userData.username].pagesLastWeek) && (
-                        <div className="bg-[#0f172a] rounded-lg p-3">
-                          <p className="text-sm text-gray-400 mb-1">Pages</p>
-                          <p className="text-2xl font-semibold text-[#4ade80]">
-                            {weeklyData[userData.username].pagesThisWeek || '0'}/{weeklyData[userData.username].pagesLastWeek || '0'}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
-                        </div>
-                      )}
+                      <div className="bg-[#0f172a] rounded-lg p-3">
+                        <p className="text-sm text-gray-400 mb-1">Pages</p>
+                        <p className={`text-2xl font-semibold ${(weeklyData[userData.username].pagesThisWeek || weeklyData[userData.username].pagesLastWeek) ? 'text-[#4ade80]' : 'text-gray-500'}`}>
+                          {(weeklyData[userData.username].pagesThisWeek || weeklyData[userData.username].pagesLastWeek)
+                            ? `${weeklyData[userData.username].pagesThisWeek || '0'}/${weeklyData[userData.username].pagesLastWeek || '0'}`
+                            : 'N/A'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
+                      </div>
                       {/* Manager Feedback Date */}
-                      {weeklyData[userData.username].managerFeedbackDate && (
-                        <div className="bg-[#0f172a] rounded-lg p-3">
-                          <p className="text-sm text-gray-400 mb-1">Manager Feedback Date</p>
-                          <p className="text-lg font-semibold text-white">
-                            {weeklyData[userData.username].managerFeedbackDate}
-                          </p>
-                        </div>
-                      )}
+                      <div className="bg-[#0f172a] rounded-lg p-3">
+                        <p className="text-sm text-gray-400 mb-1">Manager Feedback Date</p>
+                        <p className={`text-lg font-semibold ${weeklyData[userData.username].managerFeedbackDate ? 'text-white' : 'text-gray-500'}`}>
+                          {weeklyData[userData.username].managerFeedbackDate || 'N/A'}
+                        </p>
+                      </div>
                       {/* Program POCs */}
-                      {(weeklyData[userData.username].pocsThisWeek || weeklyData[userData.username].pocsLastWeek) && (
-                        <div className="bg-[#0f172a] rounded-lg p-3">
-                          <p className="text-sm text-gray-400 mb-1">Program POCs</p>
-                          <p className="text-2xl font-semibold text-[#4ade80]">
-                            {weeklyData[userData.username].pocsThisWeek || '0'}/{weeklyData[userData.username].pocsLastWeek || '0'}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
-                        </div>
-                      )}
+                      <div className="bg-[#0f172a] rounded-lg p-3">
+                        <p className="text-sm text-gray-400 mb-1">Program POCs</p>
+                        <p className={`text-2xl font-semibold ${(weeklyData[userData.username].pocsThisWeek || weeklyData[userData.username].pocsLastWeek) ? 'text-[#4ade80]' : 'text-gray-500'}`}>
+                          {(weeklyData[userData.username].pocsThisWeek || weeklyData[userData.username].pocsLastWeek)
+                            ? `${weeklyData[userData.username].pocsThisWeek || '0'}/${weeklyData[userData.username].pocsLastWeek || '0'}`
+                            : 'N/A'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
+                      </div>
                       {/* Project PRs */}
-                      {(weeklyData[userData.username].projectPRsThisWeek || weeklyData[userData.username].projectPRsLastWeek) && (
-                        <div className="bg-[#0f172a] rounded-lg p-3">
-                          <p className="text-sm text-gray-400 mb-1">Project PRs</p>
-                          <p className="text-2xl font-semibold text-[#4ade80]">
-                            {weeklyData[userData.username].projectPRsThisWeek || '0'}/{weeklyData[userData.username].projectPRsLastWeek || '0'}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
-                        </div>
-                      )}
+                      <div className="bg-[#0f172a] rounded-lg p-3">
+                        <p className="text-sm text-gray-400 mb-1">Project PRs</p>
+                        <p className={`text-2xl font-semibold ${(weeklyData[userData.username].projectPRsThisWeek || weeklyData[userData.username].projectPRsLastWeek) ? 'text-[#4ade80]' : 'text-gray-500'}`}>
+                          {(weeklyData[userData.username].projectPRsThisWeek || weeklyData[userData.username].projectPRsLastWeek)
+                            ? `${weeklyData[userData.username].projectPRsThisWeek || '0'}/${weeklyData[userData.username].projectPRsLastWeek || '0'}`
+                            : 'N/A'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
+                      </div>
                       {/* Slack Contributions */}
-                      {(weeklyData[userData.username].slackContributionsThisWeek || weeklyData[userData.username].slackContributionsLastWeek) && (
-                        <div className="bg-[#0f172a] rounded-lg p-3">
-                          <p className="text-sm text-gray-400 mb-1">Slack Contributions</p>
-                          <p className="text-2xl font-semibold text-[#4ade80]">
-                            {weeklyData[userData.username].slackContributionsThisWeek || '0'}/{weeklyData[userData.username].slackContributionsLastWeek || '0'}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
-                        </div>
-                      )}
+                      <div className="bg-[#0f172a] rounded-lg p-3">
+                        <p className="text-sm text-gray-400 mb-1">Slack Contributions</p>
+                        <p className={`text-2xl font-semibold ${(weeklyData[userData.username].slackContributionsThisWeek || weeklyData[userData.username].slackContributionsLastWeek) ? 'text-[#4ade80]' : 'text-gray-500'}`}>
+                          {(weeklyData[userData.username].slackContributionsThisWeek || weeklyData[userData.username].slackContributionsLastWeek)
+                            ? `${weeklyData[userData.username].slackContributionsThisWeek || '0'}/${weeklyData[userData.username].slackContributionsLastWeek || '0'}`
+                            : 'N/A'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">This Week / Last Week</p>
+                      </div>
                     </div>
                     {/* Key Findings */}
-                    {weeklyData[userData.username].keyFindings.some(kf => kf) && (
+                    {weeklyData[userData.username].keyFindings && weeklyData[userData.username].keyFindings.some(kf => kf) ? (
                       <div className="mt-4 pt-4 border-t border-[#334155]">
                         <p className="text-sm text-gray-400 mb-3 font-medium">Key Findings</p>
                         <ul className="space-y-2">
@@ -1211,6 +1209,11 @@ For more detailed analytics and visualizations, access the full dashboard.`;
                               </li>
                             ))}
                         </ul>
+                      </div>
+                    ) : (
+                      <div className="mt-4 pt-4 border-t border-[#334155]">
+                        <p className="text-sm text-gray-400 mb-3 font-medium">Key Findings</p>
+                        <p className="text-gray-500">N/A</p>
                       </div>
                     )}
                   </div>
