@@ -150,10 +150,12 @@ function TeamReport({ users, corporateUsers, onClose }) {
       
       pdf.setFontSize(11);
       pdf.setFont(undefined, 'normal');
-      pdf.text(`Team Members: ${teamData.length}`, 20, 95);
-      pdf.text(`Total Personal Commits (${currentYear}): ${totalPersonalCommits.toLocaleString()}`, 20, 105);
-      pdf.text(`Total Corporate Commits (${currentYear}): ${totalCorporateCommits.toLocaleString()}`, 20, 115);
-      pdf.text(`Combined Total: ${(totalPersonalCommits + totalCorporateCommits).toLocaleString()}`, 20, 125);
+      const summaryLeftX = 20;
+      const summaryRightX = 110;
+      pdf.text(`Team Members: ${teamData.length}`, summaryLeftX, 95);
+      pdf.text(`Total Personal Commits (${currentYear}): ${totalPersonalCommits.toLocaleString()}`, summaryLeftX, 105);
+      pdf.text(`Total Corporate Commits (${currentYear}): ${totalCorporateCommits.toLocaleString()}`, summaryRightX, 95);
+      pdf.text(`Combined Total: ${(totalPersonalCommits + totalCorporateCommits).toLocaleString()}`, summaryRightX, 105);
       
       // Get all team member cards
       const teamCards = reportRef.current.querySelectorAll('.bg-\\[\\#0f172a\\].border.border-\\[\\#334155\\].rounded-lg.p-4');
@@ -1065,7 +1067,7 @@ For more detailed analytics and visualizations, access the full dashboard.`;
                 {weeklyData[userData.username] && Object.values(weeklyData[userData.username]).some(val => Array.isArray(val) ? val.some(v => v) : val) && (
                   <div className="bg-[#1e293b] border border-[#334155] rounded-lg p-4 mb-4">
                     <h4 className="text-lg font-medium text-white mb-3">📊 Weekly Summary</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-2 gap-4 mb-4">
                       {/* Commits */}
                       {(weeklyData[userData.username].personalCommitsThisWeek || weeklyData[userData.username].personalCommitsLastWeek) && (
                         <div className="bg-[#0f172a] rounded-lg p-3">
